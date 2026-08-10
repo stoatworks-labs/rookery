@@ -686,16 +686,40 @@ function wireScan() {
       }
       for (const found of body.found) {
         const item = el('li', 'scan-result');
-        let label = found.host;
+        let label = found.name ? `${found.name} · ${found.host}` : found.host;
         if (found.version) label += ` · ${found.version}`;
         if (found.needs_token) label += ' · needs a token';
         item.append(el('span', '', label));
+
+        // The distinction that matters when the operator clicks add. An
+        // advertised instance told us its OSC port; a swept one did not, and
+        // the form is about to be filled with the default. Saying so here is
+        // the only warning there will ever be — a wrong OSC port produces an
+        // instance that polls green and silently ignores every cue, because
+        // OSC has no replies to notice the absence of.
+        if (found.found_via === 'mdns') {
+          const osc = found.osc_port ? `OSC ${found.osc_port}` : 'OSC off';
+          item.append(el('span', 'muted small', ` advertised · ${osc}`));
+        } else {
+          item.append(el('span', 'muted small', ' found by scanning · OSC port assumed'));
+        }
+
         const add = el('button', 'link', 'add');
         add.onclick = () => {
           const form = $('#add-form');
-          form.querySelector('[name=name]').value = found.host;
+          form.querySelector('[name=name]').value = found.name || found.host;
           form.querySelector('[name=host]').value = found.host;
           form.querySelector('[name=http_port]').value = found.http_port;
+          // Only when the instance actually said so; otherwise leave whatever
+          // the form defaults to, which is visibly a default.
+          if (found.osc_port) {
+            const oscField = form.querySelector('[name=osc_port]');
+            if (oscField) oscField.value = found.osc_port;
+          }
+          if (found.osc_prefix) {
+            const prefixField = form.querySelector('[name=osc_prefix]');
+            if (prefixField) prefixField.value = found.osc_prefix;
+          }
           form.querySelector('[name=name]').focus();
         };
         item.append(add);

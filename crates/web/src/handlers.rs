@@ -315,16 +315,19 @@ pub async fn scan_discovery(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let found = state.discovery.scan().await?;
-    let known: Vec<String> = state
+    // Keyed on host *and* port: two WebLinked instances on one machine is a
+    // supported arrangement, so an already-registered instance on :7654 must
+    // not hide a second one on :7664.
+    let known: Vec<(String, u16)> = state
         .fleet
         .registry()
         .list()
         .into_iter()
-        .map(|i| i.host)
+        .map(|i| (i.host, i.http_port))
         .collect();
     let fresh: Vec<_> = found
         .into_iter()
-        .filter(|d| !known.contains(&d.host))
+        .filter(|d| !known.contains(&(d.host.clone(), d.http_port)))
         .collect();
     Ok(Json(serde_json::json!({ "found": fresh })))
 }

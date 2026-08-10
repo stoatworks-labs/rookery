@@ -1,6 +1,6 @@
 [package]
 name = "rookery-discovery"
-description = "Active subnet probe for WebLinked instances"
+description = "mDNS browse and active subnet probe for WebLinked instances"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,7 +10,9 @@ repository.workspace = true
 anyhow.workspace = true
 futures.workspace = true
 if-addrs.workspace = true
+mdns-sd.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
+tokio.workspace = true

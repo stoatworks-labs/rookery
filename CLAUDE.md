@@ -90,7 +90,7 @@ To test the northbound path with something that is not rookery's own encoder,
 | `crates/fleet/` | fan-out, poller, northbound address grammar |
 | `crates/instance-live/` | the real transport: OSC out, HTTP state in |
 | `crates/instance-mock/` | simulated WebLinked on real sockets |
-| `crates/discovery/` | active subnet probe |
+| `crates/discovery/` | mDNS browse for `_weblinked._tcp`, plus the active subnet probe |
 | `crates/web/` | REST, websocket, embedded control page (no build step) |
 | `crates/rookery/` | binary: config, wiring, northbound listener |
 | `crates/diag/` | vendored from flock, unchanged |

@@ -71,9 +71,17 @@ moment, and the amber one recovered to green when it caught up.
 - **Any instance not on this machine.** Everything above was loopback.
   Nothing here exercises a real show network, a switch, VLANs, or UDP
   behaviour under load.
-- **Discovery.** `crates/discovery` compiles and its subnet-enumeration rules
-  are adapted from flock's proven ones, but the probe has never found a real
+- **Discovery, the subnet probe half.** Its subnet-enumeration rules are
+  adapted from flock's proven ones, but the probe has never found a real
   WebLinked on a real LAN — only loopback instances, which it does not sweep.
+
+  The **mDNS browse half is verified**, against a real WebLinked advertisement
+  on this machine: it resolved the record and read `name`, `ver`, `id`,
+  `oscport` and `oscprefix` correctly (see the WebLinked repo's
+  `docs/04-verification.md` §29 for the other end of the same run). Still
+  unverified there: a browse **across a real switch or VLAN** — every packet so
+  far stayed on one host — and any responder other than macOS's mDNSResponder,
+  so avahi and the Windows responder have never been browsed.
 - **Windows and Linux.** Never built or run. Nothing here is
   platform-specific, but that is an argument, not a test.
 - **Scale.** Three instances. Nothing establishes behaviour at forty.

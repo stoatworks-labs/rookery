@@ -42,6 +42,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 futures = "0.3"
 if-addrs = "0.13"
+mdns-sd = "0.11"
 aes-gcm = "0.10"
 rand = "0.8"
 hex = "0.4"

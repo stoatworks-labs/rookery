@@ -111,8 +111,11 @@ rookery makes that one action, and shows you all six at once while you do it.
   one process; rookery can address one of them across a whole group.
 - **Live preview, and interaction.** Every instance shows what it is actually
   putting out; open one larger and you can click and type into the page itself.
-- **Discovery.** An active subnet probe for WebLinked's control API, since
-  WebLinked does not advertise itself.
+- **Discovery.** A browse for the `_weblinked._tcp` advertisement WebLinked
+  publishes from 0.8.0 — which carries its **OSC port and prefix**, the two
+  things its HTTP API cannot report — backed by an active subnet probe for
+  older instances, instances started with `--no-mdns`, and networks where
+  multicast is filtered.
 
 ## Seeing what is on air
 

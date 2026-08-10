@@ -45,7 +45,7 @@ crates/
   fleet/           fan-out, the poller, the northbound address grammar
   instance-live/   the real transport: OSC out, HTTP state in
   instance-mock/   a simulated WebLinked on REAL sockets — see §5
-  discovery/       active subnet probe (WebLinked does not advertise itself)
+  discovery/       mDNS browse for _weblinked._tcp, plus a subnet probe — §5a
   web/             axum REST + websocket + embedded control page
   rookery/         the binary: config, wiring, northbound listener
   diag/            vendored from flock, unchanged
@@ -80,6 +80,37 @@ reading of WebLinked's protocol.** Only running against the real binary tests
 the reading. `docs/verification.md` is the authority on what has actually
 been run; keep it honest and keep it updated with commands and output, not
 ticks.
+
+## 5a. Discovery is two mechanisms, and the difference is load-bearing
+
+WebLinked advertises `_weblinked._tcp` from 0.8.0. The browse is the good path
+— it finds instances on any port, on any subnet multicast reaches, and its TXT
+record carries the **OSC port and prefix**, which appear *nowhere* in
+WebLinked's HTTP API.
+
+That matters here more than it would in most projects, because of §2: commands
+go out over OSC and nothing comes back. An instance added with the wrong OSC
+port polls perfectly healthy over HTTP and silently discards every cue. Before
+the advertisement existed, rookery had no choice but to assume 7655 and show
+the operator that it was an assumption.
+
+So `DiscoveredInstance::osc_port` is an `Option`, and **a swept result leaves
+it `None` rather than defaulting it**. `found_via` exists so the UI can say
+"advertised · OSC 7655" or "found by scanning · OSC port assumed". Do not
+collapse those two into one number; the whole design says a guess must never
+look like a fact.
+
+The subnet probe stays for instances older than 0.8.0, instances started with
+`--no-mdns`, and networks where multicast is filtered — which is common on
+managed venue networks.
+
+**One instance is not one browse result.** A multi-homed machine answers once
+per interface, so a single WebLinked resolves to several entries with different
+addresses and the same advertised `id`. `merge()` collapses on that id, pools
+every address seen, and *then* picks — preferring routable IPv4 over private,
+link-local and loopback. Keeping the first arrival instead was tried, and
+produced a `127/8` address for a real instance: an entry that adds cleanly,
+polls green from the same machine, and is unreachable from anywhere else.
 
 ## 6. Two traps this project will keep producing
 
