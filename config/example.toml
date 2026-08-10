@@ -1,0 +1,38 @@
+# rookery configuration. Copy to config/rookery.toml, or pass a path as the
+# first argument: `rookery /etc/rookery.toml`.
+
+# Where rookery's own web UI listens.
+bind = "0.0.0.0:8090"
+
+# The instance list. Tokens in this file are encrypted at rest with the key in
+# `credentials.key` beside it — but a token typed in by hand as plain text is
+# accepted and encrypted on the next save, so seeding a fleet from
+# config management works.
+registry_path = "data/registry.json"
+
+# How often each instance's HTTP state is polled.
+#
+# Remember that WebLinked binds its HTTP server to 127.0.0.1 unless started
+# with `--bind 0.0.0.0`. An instance without that is fully controllable over
+# OSC and completely unpollable — commands go out, nothing comes back.
+poll_interval_ms = 1000
+
+# ---------------------------------------------------------------------------
+# Northbound OSC: where a desk, QLab, or a Companion button sends to drive the
+# whole fleet. Commented out, which switches it off.
+#
+# THERE IS NO AUTHENTICATION ON THIS PORT. That is OSC, not a choice rookery
+# makes. Anything that can reach it can retarget every instance you manage.
+# Bind it to a trusted show network, never to the internet.
+#
+#   /rookery/all/<verb>
+#   /rookery/group/<tag>/<verb>
+#   /rookery/instance/<name-or-id>/<verb>
+#   …with an optional pipeline: /rookery/group/<tag>/source/<id>/<verb>
+#
+# The verbs are WebLinked's own, unchanged: url, reload, script, mute, format,
+# output/<name>. An existing button aimed at a WebLinked is retargeted at a
+# whole group by editing the front of the address and nothing else.
+#
+# osc_bind = "0.0.0.0:7656"
+osc_prefix = "/rookery"

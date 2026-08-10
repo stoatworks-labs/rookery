@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rookery</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>rookery</h1>
+  <div class="topbar-meta">
+    <span id="conn" class="pill pill-unknown">connecting</span>
+    <span id="northbound" class="pill pill-off" title="Northbound OSC listener"></span>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- ------------------------------------------------------ targets -->
+  <aside class="panel targets">
+    <h2>Targets</h2>
+    <ul id="target-list" class="target-list"></ul>
+
+    <h2>Add an instance</h2>
+    <form id="add-form" class="stack">
+      <label>Name <input name="name" required placeholder="gfx-1"></label>
+      <label>Host <input name="host" required placeholder="192.168.1.50"></label>
+      <div class="row">
+        <label>OSC <input name="osc_port" type="number" value="7655"></label>
+        <label>HTTP <input name="http_port" type="number" value="7654"></label>
+      </div>
+      <label>Groups <input name="tags" placeholder="stage, backup"></label>
+      <label>Token <input name="token" type="password" placeholder="only if --token"></label>
+      <button type="submit">Add</button>
+    </form>
+
+    <button id="scan" class="secondary">Scan the LAN</button>
+    <ul id="scan-results" class="scan-results"></ul>
+  </aside>
+
+  <!-- ------------------------------------------------------ detail -->
+  <section class="panel detail">
+    <div id="detail-header">
+      <h2 id="detail-title">Nothing selected</h2>
+      <p id="detail-sub" class="muted">Pick a target on the left.</p>
+    </div>
+
+    <div id="controls" class="controls hidden">
+      <div class="control-row">
+        <label class="grow">Pipeline
+          <input id="source" placeholder="primary" title="A source id from --config. Leave blank for the primary pipeline.">
+        </label>
+      </div>
+
+      <div class="control-row">
+        <input id="url" class="grow" placeholder="https://example.com/graphic">
+        <button data-verb="url">Navigate</button>
+      </div>
+
+      <div class="control-row">
+        <button data-verb="reload">Reload</button>
+        <button data-verb="reload-nocache">Reload, bypass cache</button>
+        <button data-verb="mute-on">Mute</button>
+        <button data-verb="mute-off">Unmute</button>
+      </div>
+
+      <div class="control-row">
+        <input id="script" class="grow" placeholder="lowerThird.show('Anna','Head of Sound')">
+        <button data-verb="script">Run script</button>
+      </div>
+
+      <div class="control-row">
+        <input id="format" class="grow" placeholder="1080p50">
+        <button data-verb="format">Set format</button>
+      </div>
+
+      <div class="control-row">
+        <input id="output-name" class="grow" placeholder="Graphic">
+        <button data-verb="output-on">Output on</button>
+        <button data-verb="output-off">Output off</button>
+      </div>
+    </div>
+
+    <div id="instances"></div>
+  </section>
+
+  <!-- ------------------------------------------------------ activity -->
+  <aside class="panel activity">
+    <h2>Activity</h2>
+    <p class="muted small">
+      A send means the datagram left this machine. OSC has no acknowledgement
+      &mdash; watch the instance rows for whether it took effect.
+    </p>
+    <ul id="activity"></ul>
+  </aside>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

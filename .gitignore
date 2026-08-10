@@ -1,0 +1,4 @@
+/target
+/data
+config/rookery.toml
+dist-release/

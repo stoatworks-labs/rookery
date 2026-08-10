@@ -1,0 +1,20 @@
+[package]
+name = "rookery-fleet"
+description = "Fan-out, state polling and northbound OSC dispatch for rookery"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+rookery-core = { path = "../core" }
+rookery-osc = { path = "../osc" }
+anyhow.workspace = true
+futures.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+rookery-instance-live = { path = "../instance-live" }
+rookery-instance-mock = { path = "../instance-mock" }
