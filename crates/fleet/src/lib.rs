@@ -125,6 +125,29 @@ impl Fleet {
         }
     }
 
+    /// A human description of a target, for a log line or the UI's activity feed.
+    ///
+    /// `Target::describe` cannot do this on its own: it lives in `core`, which has no
+    /// registry, so a single-instance target can only name its id. A UUID is the
+    /// right thing in an address and the wrong thing in front of an operator — it
+    /// says nothing about which machine just changed, which is the one fact the line
+    /// exists to convey. So the naming happens here, where the registry is.
+    pub fn describe_target(&self, target: &Target) -> String {
+        let scope = match &target.scope {
+            Scope::Instance { id } => match self.registry.get(id) {
+                Some(instance) => instance.name,
+                // Removed between the request and the log line. Fall back rather
+                // than lose the entry.
+                None => target.scope.describe(),
+            },
+            other => other.describe(),
+        };
+        match &target.source {
+            Some(source) => format!("{scope} (source {source})"),
+            None => scope,
+        }
+    }
+
     /// Sends one command to everything the target names, concurrently.
     ///
     /// An empty result is **not** success. A cue that matched nothing is one
@@ -135,7 +158,7 @@ impl Fleet {
         let instances = self.resolve(target);
         if instances.is_empty() {
             tracing::warn!(
-                target = %target.describe(),
+                target = %self.describe_target(target),
                 command = %command.summary(),
                 "cue matched no instances — nothing was sent"
             );
@@ -161,7 +184,7 @@ impl Fleet {
         entries.sort_by(|a, b| a.instance_name.cmp(&b.instance_name));
 
         let fanout = Fanout {
-            target: target.describe(),
+            target: self.describe_target(target),
             command: command.summary(),
             entries,
         };

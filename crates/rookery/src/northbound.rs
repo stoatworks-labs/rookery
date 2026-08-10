@@ -36,7 +36,7 @@ pub async fn spawn(
                 %address,
                 "northbound cue: {} -> {}",
                 cue.command.summary(),
-                cue.target.describe()
+                fleet.describe_target(&cue.target)
             );
             let fanout = fleet.send(&cue.target, &cue.command).await;
             if !fanout.fully_sent() {

@@ -210,7 +210,7 @@ async fn send(
     if state.fleet.resolve(&target).is_empty() {
         return Err(ApiError::NotFound(format!(
             "{} matched no instances — nothing was sent",
-            target.describe()
+            state.fleet.describe_target(&target)
         )));
     }
     Ok(Json(state.fleet.send(&target, &command).await))
@@ -289,7 +289,7 @@ pub async fn resolve_target(
         .map(|i| i.name)
         .collect();
     Ok(Json(serde_json::json!({
-        "target": target.describe(),
+        "target": state.fleet.describe_target(&target),
         "names": names,
     })))
 }

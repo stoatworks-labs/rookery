@@ -312,3 +312,67 @@ async fn an_unknown_source_id_is_dropped_by_the_instance_not_by_the_send() {
     assert_eq!(mocks[0].journal().reloads, 0);
     assert!(mocks[0].journal().rejected > 0);
 }
+
+/// A UUID is the right thing in an OSC address and the wrong thing in an
+/// operator-facing log line: it says nothing about which machine just changed.
+#[tokio::test]
+async fn a_fanout_names_the_instance_rather_than_its_uuid() {
+    let (fleet, _mocks) = fleet_of_three().await;
+    let id = fleet
+        .registry()
+        .list()
+        .into_iter()
+        .find(|i| i.name == "gfx-2")
+        .unwrap()
+        .id;
+
+    let fanout = fleet
+        .send(
+            &Target::instance(id),
+            &Command::Reload {
+                ignore_cache: false,
+            },
+        )
+        .await;
+
+    assert_eq!(fanout.target, "gfx-2");
+    assert!(
+        !fanout.target.contains(&id.to_string()),
+        "the uuid leaked into the operator-facing description: {}",
+        fanout.target
+    );
+
+    // A pipeline selector still shows, because it changes what was addressed.
+    let fanout = fleet
+        .send(
+            &Target::instance(id).with_source(Some("lower-third".to_string())),
+            &Command::Reload {
+                ignore_cache: false,
+            },
+        )
+        .await;
+    assert_eq!(fanout.target, "gfx-2 (source lower-third)");
+
+    // Groups and all were already named; check they did not regress.
+    let fanout = fleet
+        .send(
+            &Target::group("stage"),
+            &Command::Reload {
+                ignore_cache: false,
+            },
+        )
+        .await;
+    assert_eq!(fanout.target, "group \"stage\"");
+}
+
+/// An instance removed between the send and the log line must not lose the
+/// entry — falling back to the id beats dropping it.
+#[tokio::test]
+async fn a_removed_instance_falls_back_to_its_id() {
+    let (fleet, _mocks) = fleet_of_three().await;
+    let id = rookery_core::InstanceId::new();
+    assert_eq!(
+        fleet.describe_target(&Target::instance(id)),
+        format!("instance {id}")
+    );
+}
