@@ -15,12 +15,15 @@ lighting desk.
 A sibling to [flock](https://github.com/stoatworks-labs/flock), which does the
 same job for BirdDog Play decoders.
 
-![rookery: a group tree on the left, fan-out controls and per-instance state in the middle, an activity log on the right](docs/screenshots/overview.png)
+[![Watch it running — 60 seconds](docs/video-thumb.png)](https://www.youtube.com/watch?v=fMPwYG5TRAs)
 
-*Three real WebLinked 0.7.1 instances, two tagged `stage` and one `lobby`.
-Not a mockup — and the amber dots are real: all three are headless background
-processes, which macOS throttles, so they genuinely are dropping ticks. See
-[Health](#health-what-the-dots-mean).*
+*A 60-second tour: three real WebLinked 0.7.1 instances, two tagged `stage` and
+one `lobby`, driven from rookery's own controls and by one OSC cue sent from
+outside the browser. Not a mockup — and the amber dots are real: all three are
+headless background processes, which macOS throttles, so they genuinely are
+dropping ticks. See [Health](#health-what-the-dots-mean).*
+
+![rookery: a group tree on the left, fan-out controls and per-instance state in the middle, an activity log on the right](docs/screenshots/overview.png)
 
 <!-- Nothing hand-written goes between the downloads markers below.
      gen-downloads.py rewrites that whole block wholesale at every release and
