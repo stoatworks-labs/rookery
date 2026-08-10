@@ -126,7 +126,7 @@ jobs:
           rl_dmg "${{ matrix.name }}-cli" "$stage"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rookery-${{ matrix.name }}
           path: |
@@ -178,7 +178,7 @@ jobs:
           done
           ls -l installers
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: rookery-windows-installers
           path: installers/*
