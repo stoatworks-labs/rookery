@@ -34,17 +34,17 @@ dropping ticks. See [Health](#health-what-the-dots-mean).*
 
 ## Download
 
-**[v0.1.0](https://github.com/stoatworks-labs/rookery/releases/tag/v0.1.0)** — prebuilt for macOS, Windows and Linux. Pick your platform:
+**[v0.1.1](https://github.com/stoatworks-labs/rookery/releases/tag/v0.1.1)** — prebuilt for macOS, Windows and Linux. Pick your platform:
 
 <details>
 <summary><b>macOS</b> — Apple Silicon, Intel</summary>
 
 | Build | Download | Size |
 | --- | --- | --- |
-| Apple Silicon · .dmg disk image (CLI) | [`rookery-0.1.0-macos-aarch64-cli.dmg`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery-0.1.0-macos-aarch64-cli.dmg) | 3.5 MB |
-| Intel · .dmg disk image (CLI) | [`rookery-0.1.0-macos-x86_64-cli.dmg`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery-0.1.0-macos-x86_64-cli.dmg) | 3.8 MB |
-| Apple Silicon · .pkg installer (CLI) | [`rookery-0.1.0-macos-aarch64-cli.pkg`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery-0.1.0-macos-aarch64-cli.pkg) | 3.1 MB |
-| Intel · .pkg installer (CLI) | [`rookery-0.1.0-macos-x86_64-cli.pkg`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery-0.1.0-macos-x86_64-cli.pkg) | 3.3 MB |
+| Apple Silicon · .dmg disk image (CLI) | [`rookery-0.1.1-macos-aarch64-cli.dmg`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery-0.1.1-macos-aarch64-cli.dmg) | 3.5 MB |
+| Intel · .dmg disk image (CLI) | [`rookery-0.1.1-macos-x86_64-cli.dmg`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery-0.1.1-macos-x86_64-cli.dmg) | 3.8 MB |
+| Apple Silicon · .pkg installer (CLI) | [`rookery-0.1.1-macos-aarch64-cli.pkg`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery-0.1.1-macos-aarch64-cli.pkg) | 3.1 MB |
+| Intel · .pkg installer (CLI) | [`rookery-0.1.1-macos-x86_64-cli.pkg`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery-0.1.1-macos-x86_64-cli.pkg) | 3.2 MB |
 | Apple Silicon · .tar.gz archive | [`rookery-macos-aarch64.tar.gz`](https://github.com/stoatworks-labs/rookery/releases/latest/download/rookery-macos-aarch64.tar.gz) | 3.1 MB |
 | Intel · .tar.gz archive | [`rookery-macos-x86_64.tar.gz`](https://github.com/stoatworks-labs/rookery/releases/latest/download/rookery-macos-x86_64.tar.gz) | 3.2 MB |
 
@@ -55,8 +55,8 @@ dropping ticks. See [Health](#health-what-the-dots-mean).*
 
 | Build | Download | Size |
 | --- | --- | --- |
-| x64 · .exe installer | [`rookery-0.1.0-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery-0.1.0-windows-x86_64-setup.exe) | 2.2 MB |
-| ARM64 · .exe installer | [`rookery-0.1.0-windows-aarch64-setup.exe`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery-0.1.0-windows-aarch64-setup.exe) | 2.0 MB |
+| x64 · .exe installer | [`rookery-0.1.1-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery-0.1.1-windows-x86_64-setup.exe) | 2.2 MB |
+| ARM64 · .exe installer | [`rookery-0.1.1-windows-aarch64-setup.exe`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery-0.1.1-windows-aarch64-setup.exe) | 2.0 MB |
 | x64 · .zip archive | [`rookery-windows-x86_64.zip`](https://github.com/stoatworks-labs/rookery/releases/latest/download/rookery-windows-x86_64.zip) | 2.7 MB |
 | ARM64 · .zip archive | [`rookery-windows-aarch64.zip`](https://github.com/stoatworks-labs/rookery/releases/latest/download/rookery-windows-aarch64.zip) | 2.6 MB |
 
@@ -67,10 +67,10 @@ dropping ticks. See [Health](#health-what-the-dots-mean).*
 
 | Build | Download | Size |
 | --- | --- | --- |
-| x64 · .deb package (Debian/Ubuntu) | [`rookery_0.1.0_amd64.deb`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery_0.1.0_amd64.deb) | 3.5 MB |
-| ARM64 · .deb package (Debian/Ubuntu) | [`rookery_0.1.0_arm64.deb`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery_0.1.0_arm64.deb) | 3.5 MB |
-| x64 · .rpm package (Fedora/RHEL) | [`rookery-0.1.0-1.x86_64.rpm`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery-0.1.0-1.x86_64.rpm) | 3.6 MB |
-| ARM64 · .rpm package (Fedora/RHEL) | [`rookery-0.1.0-1.aarch64.rpm`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.0/rookery-0.1.0-1.aarch64.rpm) | 3.6 MB |
+| x64 · .deb package (Debian/Ubuntu) | [`rookery_0.1.1_amd64.deb`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery_0.1.1_amd64.deb) | 3.5 MB |
+| ARM64 · .deb package (Debian/Ubuntu) | [`rookery_0.1.1_arm64.deb`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery_0.1.1_arm64.deb) | 3.5 MB |
+| x64 · .rpm package (Fedora/RHEL) | [`rookery-0.1.1-1.x86_64.rpm`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery-0.1.1-1.x86_64.rpm) | 3.6 MB |
+| ARM64 · .rpm package (Fedora/RHEL) | [`rookery-0.1.1-1.aarch64.rpm`](https://github.com/stoatworks-labs/rookery/releases/download/v0.1.1/rookery-0.1.1-1.aarch64.rpm) | 3.6 MB |
 | x64 · .tar.gz archive | [`rookery-linux-x86_64.tar.gz`](https://github.com/stoatworks-labs/rookery/releases/latest/download/rookery-linux-x86_64.tar.gz) | 3.4 MB |
 | ARM64 · .tar.gz archive | [`rookery-linux-aarch64.tar.gz`](https://github.com/stoatworks-labs/rookery/releases/latest/download/rookery-linux-aarch64.tar.gz) | 3.4 MB |
 
