@@ -107,6 +107,18 @@ pub struct InstanceBody {
     pub token: Option<String>,
     #[serde(default)]
     pub poll: Option<bool>,
+    /// `Some(None)` clears it, `None` leaves it alone — which is why this is a
+    /// double option rather than a plain one. Without the distinction, any
+    /// update that did not mention the factor would silently unset it.
+    #[serde(default, deserialize_with = "double_option")]
+    pub preview_factor: Option<Option<u8>>,
+}
+
+fn double_option<'de, D>(deserializer: D) -> Result<Option<Option<u8>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    serde::Deserialize::deserialize(deserializer).map(Some)
 }
 
 impl InstanceBody {
@@ -130,6 +142,9 @@ impl InstanceBody {
             .collect();
         if let Some(poll) = self.poll {
             instance.poll = poll;
+        }
+        if let Some(factor) = self.preview_factor {
+            instance.preview_factor = factor;
         }
         match self.token.as_deref() {
             // The frontend echoes back the redaction for an unchanged token.

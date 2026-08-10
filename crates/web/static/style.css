@@ -172,3 +172,53 @@ button.link.danger { color: var(--fault); }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
 .error { color: var(--fault); }
+
+/* ------------------------------------------------------------- previews */
+
+.instance-body { display: flex; gap: 12px; margin-top: 10px; align-items: flex-start; }
+.instance-detail { flex: 1; min-width: 0; }
+
+.thumb {
+  position: relative; flex: none; width: 192px; aspect-ratio: 16 / 9;
+  border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  background: #000; cursor: pointer;
+}
+.thumb:hover { border-color: var(--accent); }
+.thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+/* Until the first frame lands there is nothing to show, and a broken-image
+   glyph would read as a fault rather than as "not yet". */
+.thumb img.empty { visibility: hidden; }
+.thumb-note {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 11px; color: var(--muted); text-align: center; padding: 6px;
+  pointer-events: none;
+}
+
+.expanded {
+  margin-top: 12px; border: 1px solid var(--line); border-radius: 8px;
+  overflow: hidden; background: #000; outline: none;
+}
+.expanded:focus-visible { border-color: var(--accent); }
+.expanded img { width: 100%; display: block; aspect-ratio: 16 / 9; object-fit: contain; }
+.expanded img.empty { visibility: hidden; }
+
+.expanded-bar {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: var(--panel-2); border-bottom: 1px solid var(--line);
+}
+.expanded-name { font-weight: 600; flex: 1; }
+.expanded select.factor {
+  background: var(--bg); color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 7px; font: inherit; font-size: 12px;
+}
+.expanded .arm { background: var(--panel); color: var(--text); border: 1px solid var(--line); }
+
+/* Armed is deliberately loud: while this is on, a click changes what is on
+   air, and the operator must never have to remember whether it is. */
+.expanded.armed { border-color: var(--fault); box-shadow: 0 0 0 2px rgba(248,81,73,0.35); }
+.expanded.armed .expanded-bar { background: rgba(248,81,73,0.16); }
+.expanded.armed .arm { border-color: var(--fault); color: var(--fault); }
+.expanded.armed img { cursor: crosshair; }
+
+.arm-note { padding: 7px 10px; font-size: 12px; color: var(--muted); background: var(--panel-2); }
+.expanded.armed .arm-note { color: var(--fault); }

@@ -109,8 +109,43 @@ rookery makes that one action, and shows you all six at once while you do it.
   an existing button is retargeted by editing the front of the address.
 - **Multi-source aware.** WebLinked can run several independent pipelines in
   one process; rookery can address one of them across a whole group.
+- **Live preview, and interaction.** Every instance shows what it is actually
+  putting out; open one larger and you can click and type into the page itself.
 - **Discovery.** An active subnet probe for WebLinked's control API, since
   WebLinked does not advertise itself.
+
+## Seeing what is on air
+
+Each instance shows a live picture of its own output, taken from WebLinked's
+`/api/preview`. Click one to open it larger.
+
+**Interaction is off until you arm it.** The large view has a *Take control*
+toggle; until you press it the picture is view-only and a stray click does
+nothing. Armed, the pane turns red and mouse and keyboard go straight into the
+page — which, on a machine that is on air, changes what the audience sees. Esc
+releases it.
+
+### The cost, and the setting that governs it
+
+WebLinked's preview is a **raw BGRA buffer** — 8.3 MB a frame at its default
+factor of 1. rookery never puts that on the browser: it fetches it, encodes
+JPEG, and hangs an ETag on WebLinked's paint counter, so a graphic that is not
+moving costs a `304` with no body at all.
+
+Measured on three instances at ~4 fps: **0.19 Mbit/s** for animated pages,
+**zero** for static ones. Without the JPEG and the ETag the same three would be
+95 MB/s.
+
+The remaining lever is the instance's own preview factor, offered per-instance
+in the large view. It is **opt-in** because it is not rookery's setting to
+change quietly: the factor belongs to that instance's preview output, and
+turning it down also shrinks the picture on that machine's own control page.
+
+```
+factor 1  1920x1080   8.3 MB raw     (the default if you set nothing)
+factor 4   480x270    518 KB raw
+factor 8   240x135    130 KB raw  ->  about 2 KB as JPEG
+```
 
 ## Quick start
 

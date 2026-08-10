@@ -6,7 +6,7 @@ Commands and the rules that bite. Read `AGENTS.md` for the model behind them.
 
 ```bash
 cargo build
-cargo test                                    # 56 tests, seconds
+cargo test                                    # 76 tests, seconds
 cargo clippy --all-targets --all-features
 ```
 
@@ -70,6 +70,14 @@ To test the northbound path with something that is not rookery's own encoder,
 6. **`Command` stays exactly WebLinked's OSC verb set.** Anything only
    reachable over HTTP does not become a `Command`.
 7. **Groups are derived from tags**, never stored as entities.
+7b. **Never change an instance's preview factor without being asked.** It is
+   that instance's own output and its local control page shows the same one.
+   `Instance::preview_factor` is opt-in; the poller reconciles it only when it
+   can see the current value and it differs, because writing blind means
+   rewriting on every poll for ever.
+7c. **Interaction is armed, never ambient.** A click on a preview changes what
+   is on air. The UI gates it behind take-control and the un-armed case is
+   tested.
 8. `diag::init` first in `main`, and hold the guard.
 9. Commit means commit **and** push.
 

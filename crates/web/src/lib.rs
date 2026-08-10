@@ -1,5 +1,6 @@
 mod error;
 mod handlers;
+mod preview;
 mod state;
 mod static_assets;
 mod ws;
@@ -31,6 +32,8 @@ pub fn app(state: AppState) -> Router {
             put(handlers::update_instance).delete(handlers::delete_instance),
         )
         .route("/api/instances/:id/send", post(handlers::send_to_instance))
+        .route("/api/instances/:id/preview", get(preview::get_preview))
+        .route("/api/instances/:id/input", post(preview::post_input))
         .route("/api/groups/:tag/send", post(handlers::send_to_group))
         .route("/api/all/send", post(handlers::send_to_all))
         .route("/api/resolve", get(handlers::resolve_target))

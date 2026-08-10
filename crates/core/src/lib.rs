@@ -8,6 +8,7 @@ pub mod client;
 pub mod command;
 mod crypto;
 pub mod instance;
+pub mod preview;
 pub mod registry;
 pub mod state;
 
@@ -16,6 +17,9 @@ pub use command::Command;
 pub use instance::{
     Instance, InstanceCredentials, InstanceId, DEFAULT_HTTP_PORT, DEFAULT_OSC_PORT,
     DEFAULT_OSC_PREFIX,
+};
+pub use preview::{
+    InputBatch, InputEvent, KeyAction, PreviewFrame, PreviewUnavailable, FOCUS_FACTOR, WALL_FACTOR,
 };
 pub use registry::Registry;
 pub use state::{

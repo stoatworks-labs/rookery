@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use crate::command::Command;
 use crate::instance::Instance;
+use crate::preview::{InputEvent, PreviewFrame, PreviewUnavailable};
 use crate::state::SourcesState;
 
 #[async_trait]
@@ -34,6 +35,30 @@ pub trait InstanceClient: Send + Sync {
     /// pollable from another machine), or when a token is required and the
     /// stored one is wrong.
     async fn state(&self) -> anyhow::Result<SourcesState>;
+
+    /// Fetches the latest preview frame for one source.
+    ///
+    /// `Ok(Err(reason))` is a working instance with no picture to give — it was
+    /// started `--no-preview`, or has not painted yet. That is a normal state
+    /// and not a transport failure, so it is a value rather than an error: the
+    /// UI says which, instead of showing an empty box or a red row.
+    async fn preview(
+        &self,
+        source: Option<&str>,
+    ) -> anyhow::Result<Result<PreviewFrame, PreviewUnavailable>>;
+
+    /// Delivers input to the page.
+    ///
+    /// Unlike `send`, this goes over **HTTP**, not OSC — WebLinked exposes no
+    /// OSC verb for input, and a click needs to be ordered with respect to the
+    /// clicks around it, which UDP will not promise.
+    async fn send_input(&self, events: &[InputEvent], source: Option<&str>) -> anyhow::Result<()>;
+
+    /// Asks the instance to run its preview output at `factor`.
+    ///
+    /// Idempotent and only called when an operator has opted in — see
+    /// `Instance::preview_factor` for why this is not done automatically.
+    async fn set_preview_factor(&self, factor: u8) -> anyhow::Result<()>;
 }
 
 /// Resolves an `Instance` record to the client that talks to it.

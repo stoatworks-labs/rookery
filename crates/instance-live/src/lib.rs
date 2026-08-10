@@ -33,7 +33,9 @@ use std::time::Duration;
 use async_trait::async_trait;
 
 use rookery_core::client::{InstanceClient, InstanceClientProvider};
-use rookery_core::{Command, Instance, SourceState, SourcesState};
+use rookery_core::{
+    Command, InputEvent, Instance, PreviewFrame, PreviewUnavailable, SourceState, SourcesState,
+};
 use rookery_osc::OscSender;
 
 /// How long to wait on the state poll. Generous: WebLinked answers in
@@ -54,6 +56,18 @@ impl LiveClient {
             instance,
             sender,
             http,
+        }
+    }
+
+    /// Appends `?source=<id>` where one was named.
+    ///
+    /// A query parameter rather than a path segment because that is the shape
+    /// WebLinked's HTTP API takes — the source lives in the *address* only on
+    /// the OSC side.
+    fn with_source(path: &str, source: Option<&str>) -> String {
+        match source {
+            Some(id) => format!("{path}?source={}", urlencode(id)),
+            None => path.to_string(),
         }
     }
 
@@ -147,6 +161,114 @@ impl InstanceClient for LiveClient {
         self.check_status(&response)?;
         Ok(response.json().await?)
     }
+
+    async fn preview(
+        &self,
+        source: Option<&str>,
+    ) -> anyhow::Result<Result<PreviewFrame, PreviewUnavailable>> {
+        let response = self.get(&Self::with_source("/api/preview", source)).await?;
+
+        // Both of these are ordinary states of a working instance, not faults.
+        match response.status().as_u16() {
+            404 => return Ok(Err(PreviewUnavailable::NotConfigured)),
+            503 => return Ok(Err(PreviewUnavailable::NoFrameYet)),
+            _ => {}
+        }
+        self.check_status(&response)?;
+
+        let header = |name: &str| -> anyhow::Result<i64> {
+            response
+                .headers()
+                .get(name)
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.parse().ok())
+                .ok_or_else(|| anyhow::anyhow!("{}: preview is missing {name}", self.instance.name))
+        };
+        let width = header("X-Frame-Width")? as u32;
+        let height = header("X-Frame-Height")? as u32;
+        let sequence = header("X-Frame-Sequence")?;
+
+        let bgra = response.bytes().await?.to_vec();
+        let frame = PreviewFrame {
+            width,
+            height,
+            sequence,
+            bgra,
+        };
+        // A short body would otherwise be decoded as a picture — half a graphic,
+        // rendered confidently, is worse than none.
+        anyhow::ensure!(
+            frame.is_complete(),
+            "{}: preview claims {width}x{height} ({} bytes) but {} arrived",
+            self.instance.name,
+            frame.expected_len(),
+            frame.bgra.len()
+        );
+        Ok(Ok(frame))
+    }
+
+    async fn send_input(&self, events: &[InputEvent], source: Option<&str>) -> anyhow::Result<()> {
+        if events.is_empty() {
+            return Ok(());
+        }
+        // Always batched, even for one event: it is the shape that keeps a drag
+        // to a single request instead of sixty.
+        let body = serde_json::json!({ "events": events });
+        let url = format!(
+            "{}{}",
+            self.instance.base_url(),
+            Self::with_source("/api/input", source)
+        );
+        let response = self
+            .authorised(self.http.post(&url))
+            .json(&body)
+            .timeout(HTTP_TIMEOUT)
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("{} ({}): {e}", self.instance.name, url))?;
+        self.check_status(&response)?;
+        Ok(())
+    }
+
+    async fn set_preview_factor(&self, factor: u8) -> anyhow::Result<()> {
+        // Replaces the preview output in place. WebLinked restarts the old one
+        // if the new spec fails, so a bad factor cannot leave an instance with
+        // no preview at all.
+        let body = serde_json::json!({
+            "name": "preview",
+            "output": { "kind": "preview", "name": "preview",
+                        "options": { "factor": factor } }
+        });
+        let url = format!("{}/api/output/update", self.instance.base_url());
+        let response = self
+            .authorised(self.http.post(&url))
+            .json(&body)
+            .timeout(HTTP_TIMEOUT)
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("{} ({}): {e}", self.instance.name, url))?;
+        self.check_status(&response)?;
+        tracing::info!(instance = %self.instance.name, factor, "preview factor set");
+        Ok(())
+    }
+}
+
+/// Percent-encodes a source id for a query string.
+///
+/// Hand-rolled rather than another dependency: source ids are short and the
+/// set that needs escaping is small, but they are operator-chosen, so a space
+/// or an ampersand in one must not silently address a different pipeline.
+fn urlencode(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for byte in text.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(byte as char)
+            }
+            _ => out.push_str(&format!("%{byte:02X}")),
+        }
+    }
+    out
 }
 
 /// Builds `LiveClient`s over one shared UDP socket and one shared HTTP

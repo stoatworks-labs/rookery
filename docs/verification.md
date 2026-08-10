@@ -12,7 +12,7 @@ below tests the reading.
 
 ---
 
-## 1. Automated tests — 56, all passing
+## 1. Automated tests — 76, all passing
 
 ```bash
 cargo test
@@ -114,3 +114,69 @@ curl -s http://127.0.0.1:7654/api/state | jq .source.loaded_url
 
 That last step is the whole discipline: rookery saying "sent" only means a
 datagram left the machine. Check the instance.
+
+---
+
+## 4. Live preview and interaction — 2026-08-10
+
+Added after v0.1.1 and exercised against the same three-instance rig. Every
+figure below was measured, not estimated.
+
+### The picture
+
+| Check | Result |
+|---|---|
+| A frame arrives whole | 1920x1080, 8,294,400 bytes of BGRA, buffer matches the headers |
+| Colours survive the BGRA→JPEG swap | a `#0a1020` navy scoreboard rendered navy, not brown |
+| JPEG on the browser leg | 37,662 bytes at factor 1; **220x** smaller than the raw frame |
+| Preview factor set at runtime | instance reported `factor: 8` after the request; frame became 240x135 / 1,508 bytes |
+| Reconciliation is idempotent | one `preview factor set` log line, then none across ten further polls |
+| `--no-preview` | 404 from the instance → 204 with `X-Preview-Unavailable: not-configured` |
+
+### Bandwidth, which is the whole reason for the design
+
+Three instances rendering an **animated** page, all at factor 8, polled at
+~4 fps through rookery: **0.19 Mbit/s** total, 2,231 bytes per frame.
+Extrapolated to eight instances, about **0.5 Mbit/s**.
+
+The same three showing **static** graphics: **zero image bytes**. Every one of
+24 consecutive requests answered `304`, because WebLinked's `X-Frame-Sequence`
+does not advance without a repaint and rookery hangs its ETag on it.
+
+For scale, the naive version of this feature — polling `/api/preview` at
+factor 1 without conditional requests — would be **95 MB/s** for the same three
+instances.
+
+Worth recording that the design estimate before measuring was 33 Mbit/s for
+eight instances, about **60x pessimistic**: it sized the wall on the raw frame
+rather than on the JPEG that actually crosses the wire.
+
+### Interaction
+
+Driven end to end through rookery's proxy, against a real page, with the result
+confirmed **in the preview** rather than in a return code:
+
+- A click at normalised (0.498, 0.248) turned a green button red — and the
+  coordinates came from measuring the preview itself, which is the point: the
+  picture is what you aim with.
+- Typing `hi` into a real `<input>` after clicking it: read back out of
+  `document.getElementById('f').value` as `hi`.
+- **Un-armed clicks are blocked.** The same click dispatched at the pane before
+  arming left the button green; after arming, it landed. That is the guard
+  doing its job, tested rather than assumed.
+
+`character` is the **character** code, not the key code: `key_code` 72 with
+`character` 104 types `h`; `character` 72 types `H`. Both fields are needed on
+the keydown as well as the char event.
+
+### What is still unverified
+
+- All of it on one machine over loopback, like everything else here.
+- No instance has ever been asked for a preview **while it was also feeding
+  SDI or NDI under load**; the cost of the preview output to a busy instance is
+  unmeasured.
+- The `wheel` event is implemented and typed but has not been driven against a
+  scrolling page.
+- Only one pipeline per instance has been previewed. `?source=` is passed
+  through and tested against the mock, but a real multi-source instance has not
+  been previewed per-pipeline.

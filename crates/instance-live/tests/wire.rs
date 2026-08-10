@@ -15,6 +15,20 @@ use rookery_instance_mock::MockInstance;
 
 const SETTLE: Duration = Duration::from_secs(2);
 
+/// One named output of the primary source. Named rather than indexed because a
+/// real instance carries a preview output alongside whatever else is
+/// configured, and its position is an implementation detail.
+fn named_output<'a>(
+    state: &'a rookery_core::SourcesState,
+    name: &str,
+) -> &'a rookery_core::OutputInfo {
+    state.sources[0]
+        .outputs
+        .iter()
+        .find(|o| o.name == name)
+        .unwrap_or_else(|| panic!("no output called {name:?}"))
+}
+
 async fn fixture() -> (MockInstance, std::sync::Arc<dyn InstanceClient>) {
     let mock = MockInstance::start().await.unwrap();
     let mut instance = Instance::new("gfx-1", "127.0.0.1");
@@ -178,7 +192,9 @@ async fn an_output_toggle_names_the_output_in_the_address() {
         "/weblinked/output/Graphic"
     );
     let state = client.state().await.unwrap();
-    assert_eq!(state.sources[0].outputs[0].enabled, Some(false));
+    // By name, not by index: a real instance has a preview output too, and its
+    // position among the others is not something to depend on.
+    assert_eq!(named_output(&state, "Graphic").enabled, Some(false));
 }
 
 /// An output whose name has a space is entirely normal — "Programme Fill" —
@@ -186,7 +202,12 @@ async fn an_output_toggle_names_the_output_in_the_address() {
 #[tokio::test]
 async fn an_output_name_with_a_space_survives_the_address() {
     let mut state = rookery_instance_mock::default_state();
-    state.sources[0].outputs[0].name = "Programme Fill".to_string();
+    let graphic = state.sources[0]
+        .outputs
+        .iter_mut()
+        .find(|o| o.name == "Graphic")
+        .unwrap();
+    graphic.name = "Programme Fill".to_string();
     let mock = MockInstance::start_with(state, None).await.unwrap();
 
     let mut instance = Instance::new("gfx-1", "127.0.0.1");
@@ -211,7 +232,7 @@ async fn an_output_name_with_a_space_survives_the_address() {
 
     assert_eq!(mock.journal().rejected, 0);
     let state = client.state().await.unwrap();
-    assert_eq!(state.sources[0].outputs[0].enabled, Some(false));
+    assert_eq!(named_output(&state, "Programme Fill").enabled, Some(false));
 }
 
 #[tokio::test]
@@ -289,4 +310,165 @@ async fn a_script_command_carries_the_whole_script() {
     assert!(mock.wait_for_messages(1, SETTLE).await);
 
     assert_eq!(mock.journal().scripts, vec![script.to_string()]);
+}
+
+// ------------------------------------------------------------------ preview
+
+#[tokio::test]
+async fn a_preview_frame_arrives_whole_and_the_sequence_advances() {
+    let (_mock, client) = fixture().await;
+
+    let first = client.preview(None).await.unwrap().expect("a frame");
+    assert_eq!((first.width, first.height), (1920, 1080));
+    assert!(
+        first.is_complete(),
+        "claimed {}x{} = {} bytes, got {}",
+        first.width,
+        first.height,
+        first.expected_len(),
+        first.bgra.len()
+    );
+
+    let second = client.preview(None).await.unwrap().expect("a frame");
+    assert!(
+        second.sequence > first.sequence,
+        "the sequence must advance or nothing can tell a live feed from a frozen one"
+    );
+}
+
+/// `--no-preview` is a legitimate way to run an SDI-only machine. It must read
+/// as "no picture available", not as a broken instance.
+#[tokio::test]
+async fn an_instance_without_a_preview_says_so_rather_than_failing() {
+    let mock = MockInstance::start().await.unwrap().without_preview();
+    let mut instance = Instance::new("gfx-1", "127.0.0.1");
+    instance.osc_port = mock.osc_port();
+    instance.http_port = mock.http_port();
+    let client = LiveClientProvider::new()
+        .await
+        .unwrap()
+        .client_for(&instance);
+
+    assert_eq!(
+        client.preview(None).await.unwrap().unwrap_err(),
+        rookery_core::PreviewUnavailable::NotConfigured
+    );
+}
+
+/// The second after a format change, every output is reopening and there is no
+/// frame yet. Also not a fault.
+#[tokio::test]
+async fn a_warming_up_instance_reports_no_frame_yet_then_recovers() {
+    let mock = MockInstance::start().await.unwrap().with_preview_warmup(2);
+    let mut instance = Instance::new("gfx-1", "127.0.0.1");
+    instance.osc_port = mock.osc_port();
+    instance.http_port = mock.http_port();
+    let client = LiveClientProvider::new()
+        .await
+        .unwrap()
+        .client_for(&instance);
+
+    for _ in 0..2 {
+        assert_eq!(
+            client.preview(None).await.unwrap().unwrap_err(),
+            rookery_core::PreviewUnavailable::NoFrameYet
+        );
+    }
+    assert!(client.preview(None).await.unwrap().is_ok());
+}
+
+#[tokio::test]
+async fn setting_the_factor_shrinks_the_frame() {
+    let (mock, client) = fixture().await;
+    assert_eq!(client.preview(None).await.unwrap().unwrap().width, 1920);
+
+    client.set_preview_factor(8).await.unwrap();
+    assert_eq!(mock.journal().preview_factors, vec![8]);
+
+    let frame = client.preview(None).await.unwrap().unwrap();
+    assert_eq!((frame.width, frame.height), (240, 135));
+    assert!(frame.is_complete());
+    // The point of the exercise: 8.29 MB down to 129.6 KB.
+    assert_eq!(frame.bgra.len(), 240 * 135 * 4);
+}
+
+/// A pipeline that does not exist must 404 rather than silently handing back
+/// the primary's picture — showing one graphic while labelling it another is
+/// the worst thing a preview can do.
+#[tokio::test]
+async fn an_unknown_source_has_no_preview() {
+    let (_mock, client) = fixture().await;
+    assert!(
+        client.preview(Some("no-such-pipeline")).await.is_err()
+            || matches!(
+                client.preview(Some("no-such-pipeline")).await,
+                Ok(Err(rookery_core::PreviewUnavailable::NotConfigured))
+            )
+    );
+}
+
+// -------------------------------------------------------------------- input
+
+#[tokio::test]
+async fn input_events_reach_the_instance_in_order() {
+    use rookery_core::{InputEvent, KeyAction};
+
+    let (mock, client) = fixture().await;
+    let events = vec![
+        InputEvent::Focus { focused: true },
+        InputEvent::Move { nx: 0.5, ny: 0.5 },
+        InputEvent::Down {
+            nx: 0.5,
+            ny: 0.5,
+            button: 0,
+            clicks: 1,
+        },
+        InputEvent::Up {
+            nx: 0.5,
+            ny: 0.5,
+            button: 0,
+        },
+        // The three-event shape a character needs, with `character` as the
+        // character code rather than the key code — 104 is `h`.
+        InputEvent::Key {
+            action: KeyAction::Down,
+            key_code: 72,
+            character: 104,
+            modifiers: 0,
+        },
+        InputEvent::Key {
+            action: KeyAction::Char,
+            key_code: 72,
+            character: 104,
+            modifiers: 0,
+        },
+        InputEvent::Key {
+            action: KeyAction::Up,
+            key_code: 72,
+            character: 104,
+            modifiers: 0,
+        },
+    ];
+
+    client.send_input(&events, None).await.unwrap();
+
+    let arrived = mock.journal().input;
+    assert_eq!(arrived.len(), events.len());
+    assert!(matches!(arrived[0], InputEvent::Focus { focused: true }));
+    assert!(matches!(
+        arrived[4],
+        InputEvent::Key {
+            action: KeyAction::Down,
+            key_code: 72,
+            character: 104,
+            ..
+        }
+    ));
+}
+
+#[tokio::test]
+async fn an_empty_input_batch_is_not_sent_at_all() {
+    let (mock, client) = fixture().await;
+    client.send_input(&[], None).await.unwrap();
+    assert!(mock.journal().input.is_empty());
 }

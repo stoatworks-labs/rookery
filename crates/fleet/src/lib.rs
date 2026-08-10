@@ -74,6 +74,40 @@ impl Cached {
     }
 }
 
+/// Whether the instance's preview output needs rewriting to reach `wanted`.
+///
+/// False in two cases that both look like "cannot tell", and in both the right
+/// move is to leave it alone:
+///
+/// * **No preview output at all** — an instance started `--no-preview`. Setting
+///   a factor on an output that does not exist fails, and doing it once per
+///   poll forever is a fault that never surfaces because each attempt is only a
+///   warning.
+/// * **A preview output that does not report its factor** — an older WebLinked.
+///   Writing blind would mean rewriting it on every poll for the life of the
+///   process, because nothing would ever confirm it had taken.
+///
+/// This one was found by a test rather than by reading: the first version
+/// asked "what is the factor" and treated `None` as "not what I wanted", which
+/// wrote the factor on every single poll.
+fn needs_preview_factor(sources: &rookery_core::SourcesState, wanted: u8) -> bool {
+    let Some(source) = sources
+        .sources
+        .iter()
+        .find(|s| s.id == sources.primary)
+        .or_else(|| sources.sources.first())
+    else {
+        return false;
+    };
+    let Some(preview) = source.outputs.iter().find(|o| o.kind == "preview") else {
+        return false;
+    };
+    match preview.factor {
+        Some(current) => current != wanted,
+        None => false,
+    }
+}
+
 pub struct Fleet {
     registry: Arc<Registry>,
     provider: Arc<dyn InstanceClientProvider>,
@@ -114,6 +148,15 @@ impl Fleet {
                 (instance, state)
             })
             .collect()
+    }
+
+    /// The live client for one instance.
+    ///
+    /// Exposed because preview and input are per-instance and synchronous —
+    /// they are not fan-out, and routing them through `send` would mean
+    /// inventing a `Command` for something that is not an OSC verb.
+    pub fn client_for(&self, instance: &Instance) -> Arc<dyn rookery_core::InstanceClient> {
+        self.provider.client_for(instance)
     }
 
     /// Resolves a target to the instances it currently names.
@@ -211,7 +254,23 @@ impl Fleet {
                     return (instance.id, None);
                 }
                 let client = self.provider.client_for(&instance);
-                (instance.id, Some(client.state().await))
+                let state = client.state().await;
+                // Reconcile the preview factor here rather than at the moment
+                // it is set, so it survives the instance restarting — which
+                // resets it to whatever its command line said. Only written
+                // when it actually differs, so the steady state is no traffic
+                // at all.
+                if let (Some(wanted), Ok(sources)) = (instance.preview_factor, &state) {
+                    if needs_preview_factor(sources, wanted) {
+                        if let Err(e) = client.set_preview_factor(wanted).await {
+                            tracing::warn!(
+                                instance = %instance.name,
+                                "could not set the preview factor: {e:#}"
+                            );
+                        }
+                    }
+                }
+                (instance.id, Some(state))
             })
             .buffer_unordered(POLL_CONCURRENCY)
             .collect::<Vec<_>>()

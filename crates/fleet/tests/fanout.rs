@@ -376,3 +376,41 @@ async fn a_removed_instance_falls_back_to_its_id() {
         format!("instance {id}")
     );
 }
+
+/// The preview factor is reconciled by the poller rather than at the moment it
+/// is set, so it survives the instance restarting — which resets it to whatever
+/// its command line said.
+#[tokio::test]
+async fn the_poller_reconciles_the_preview_factor_and_then_leaves_it_alone() {
+    let (fleet, mocks) = fleet_of_three().await;
+
+    // Nobody has asked for a factor, so nothing should be written.
+    fleet.poll_once().await;
+    assert!(
+        mocks.iter().all(|m| m.journal().preview_factors.is_empty()),
+        "an instance with no preview_factor must not be reconfigured"
+    );
+
+    let mut gfx1 = fleet
+        .registry()
+        .list()
+        .into_iter()
+        .find(|i| i.name == "gfx-1")
+        .unwrap();
+    gfx1.preview_factor = Some(8);
+    fleet.registry().upsert(gfx1).unwrap();
+
+    fleet.poll_once().await;
+    assert_eq!(mocks[0].journal().preview_factors, vec![8]);
+    assert!(mocks[1].journal().preview_factors.is_empty());
+
+    // Already at 8 now, so a second pass writes nothing: the steady state is
+    // no traffic, not one request per poll for ever.
+    fleet.poll_once().await;
+    fleet.poll_once().await;
+    assert_eq!(
+        mocks[0].journal().preview_factors,
+        vec![8],
+        "the factor was rewritten on a poll where it already matched"
+    );
+}

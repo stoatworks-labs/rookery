@@ -83,6 +83,19 @@ pub struct Instance {
     /// than a permanently red status light.
     #[serde(default = "default_true")]
     pub poll: bool,
+    /// The preview factor rookery asks this instance to run at, or `None` to
+    /// use whatever it already has.
+    ///
+    /// Opt-in on purpose. The factor belongs to the instance's own preview
+    /// output, and that same output is what WebLinked's control page shows —
+    /// so turning it down to suit a fleet thumbnail also shrinks the picture
+    /// for anyone sitting at that machine. rookery will not do that behind
+    /// somebody's back.
+    ///
+    /// An instance left at `None` still previews; it just costs whatever its
+    /// current factor costs, which for a default launch is 8 MB a frame.
+    #[serde(default)]
+    pub preview_factor: Option<u8>,
     /// Found by the subnet probe rather than typed in. Informational only.
     #[serde(default)]
     pub discovered: bool,
@@ -113,6 +126,7 @@ impl Instance {
             tags: Vec::new(),
             credentials: InstanceCredentials::default(),
             poll: true,
+            preview_factor: None,
             discovered: false,
         }
     }
@@ -167,6 +181,15 @@ impl Instance {
             self.tags.iter().all(|t| !t.trim().is_empty()),
             "a tag cannot be empty — an empty tag would create an unnameable group"
         );
+        // WebLinked clamps to 1..=16 and silently accepts anything; catching it
+        // here means a typo is refused at the point it was made rather than
+        // quietly becoming a different number on the far side.
+        if let Some(factor) = self.preview_factor {
+            anyhow::ensure!(
+                (1..=16).contains(&factor),
+                "preview_factor must be 1..=16, got {factor}"
+            );
+        }
         Ok(())
     }
 }

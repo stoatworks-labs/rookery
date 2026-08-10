@@ -57,6 +57,11 @@ pub struct OutputInfo {
     /// DeckLink only. Steady means our clock and the card's agree.
     #[serde(default)]
     pub buffered_frames: Option<i64>,
+    /// Preview only: how far down the raster is scaled. rookery reads this to
+    /// decide whether an instance already runs at the factor it was asked for,
+    /// so a matching one is never rewritten.
+    #[serde(default)]
+    pub factor: Option<u8>,
     /// Screen only.
     #[serde(default)]
     pub presented: Option<u64>,
