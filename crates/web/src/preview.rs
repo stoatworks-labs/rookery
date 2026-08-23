@@ -132,7 +132,7 @@ fn encode_jpeg(frame: &PreviewFrame, quality: u8) -> anyhow::Result<Vec<u8>> {
     anyhow::ensure!(frame.is_complete(), "refusing to encode a short frame");
 
     let mut rgb = Vec::with_capacity(frame.width as usize * frame.height as usize * 3);
-    for pixel in frame.bgra.chunks_exact(4) {
+    for pixel in frame.bgra.as_chunks::<4>().0 {
         rgb.push(pixel[2]); // R
         rgb.push(pixel[1]); // G
         rgb.push(pixel[0]); // B

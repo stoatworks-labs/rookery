@@ -459,7 +459,11 @@ mod tests {
         // survive as a second row.
         let found = merge(
             vec![advertised("192.168.1.40", "deadbeef", &["192.168.1.40"])],
-            vec![swept_instance("192.168.1.40".into(), Some("0.8.0".into()), false)],
+            vec![swept_instance(
+                "192.168.1.40".into(),
+                Some("0.8.0".into()),
+                false,
+            )],
         );
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].found_via, FoundVia::Mdns);
@@ -514,7 +518,10 @@ mod tests {
         .iter()
         .map(|a| a.to_string())
         .collect();
-        assert_eq!(preferred_address(&addresses).as_deref(), Some("192.168.1.90"));
+        assert_eq!(
+            preferred_address(&addresses).as_deref(),
+            Some("192.168.1.90")
+        );
 
         // Loopback is still better than nothing when it is genuinely all there
         // is — a single-machine setup has to remain discoverable.
