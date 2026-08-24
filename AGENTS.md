@@ -172,3 +172,10 @@ of the instance.
 - Diagnostics via the vendored `crates/diag`: wire it as the **first** thing
   in `main` and **hold the returned guard** — dropping it silently stops the
   log file being written.
+
+## Notes
+
+`docs/NOTES.md` carries this repo's working notes — current status, decisions
+already made, and the traps that have actually bitten. Read it before changing
+anything non-obvious. Cross-cutting fleet knowledge lives in
+[fleet-notes](https://github.com/stoatworks-labs/fleet-notes).
