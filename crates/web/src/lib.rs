@@ -31,10 +31,10 @@ pub fn app(state: AppState) -> Router {
             "/api/instances/:id",
             put(handlers::update_instance).delete(handlers::delete_instance),
         )
-        .route("/api/instances/:id/send", post(handlers::send_to_instance))
-        .route("/api/instances/:id/preview", get(preview::get_preview))
-        .route("/api/instances/:id/input", post(preview::post_input))
-        .route("/api/groups/:tag/send", post(handlers::send_to_group))
+        .route("/api/instances/{id}/send", post(handlers::send_to_instance))
+        .route("/api/instances/{id}/preview", get(preview::get_preview))
+        .route("/api/instances/{id}/input", post(preview::post_input))
+        .route("/api/groups/{tag}/send", post(handlers::send_to_group))
         .route("/api/all/send", post(handlers::send_to_all))
         .route("/api/resolve", get(handlers::resolve_target))
         .route("/api/discovery/scan", get(handlers::scan_discovery))
