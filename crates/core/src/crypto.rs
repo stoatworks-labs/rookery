@@ -10,7 +10,7 @@
 //!
 //! Adapted from flock's `crates/core/src/crypto.rs`, same scheme.
 
-use aes_gcm::aead::{Aead, AeadCore, KeyInit, OsRng};
+use aes_gcm::aead::{Aead, AeadCore, Generate, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use std::path::Path;
 
@@ -40,9 +40,10 @@ impl CredentialCipher {
                 key_path.display(),
                 bytes.len()
             );
-            *Key::<Aes256Gcm>::from_slice(&bytes)
+            Key::<Aes256Gcm>::try_from(bytes.as_slice())
+                .map_err(|_| anyhow::anyhow!("{} is not a valid 32-byte key", key_path.display()))?
         } else {
-            let key = Aes256Gcm::generate_key(OsRng);
+            let key = Key::<Aes256Gcm>::generate();
             if let Some(parent) = key_path.parent() {
                 std::fs::create_dir_all(parent)?;
             }
@@ -62,7 +63,7 @@ impl CredentialCipher {
     /// Encrypts `plaintext` into a self-describing string safe to embed in
     /// JSON.
     pub(crate) fn encrypt(&self, plaintext: &str) -> anyhow::Result<String> {
-        let nonce = Aes256Gcm::generate_nonce(OsRng);
+        let nonce = Nonce::<<Aes256Gcm as AeadCore>::NonceSize>::generate();
         let ciphertext = self
             .cipher
             .encrypt(&nonce, plaintext.as_bytes())
@@ -94,9 +95,11 @@ impl CredentialCipher {
             "malformed encrypted token: wrong nonce length"
         );
         let ciphertext = decode_hex(ct_hex)?;
+        let nonce = Nonce::try_from(nonce_bytes.as_slice())
+            .map_err(|_| anyhow::anyhow!("malformed encrypted token: wrong nonce length"))?;
         let plaintext = self
             .cipher
-            .decrypt(Nonce::from_slice(&nonce_bytes), ciphertext.as_ref())
+            .decrypt(&nonce, ciphertext.as_ref())
             .map_err(|_| {
                 anyhow::anyhow!(
                     "failed to decrypt a stored token - wrong or missing credentials.key?"
