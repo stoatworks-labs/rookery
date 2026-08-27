@@ -10,7 +10,7 @@
 //!
 //! Adapted from flock's `crates/core/src/crypto.rs`, same scheme.
 
-use aes_gcm::aead::{Aead, AeadCore, KeyInit, OsRng};
+use aes_gcm::aead::{Aead, AeadCore, Generate, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use std::path::Path;
 
@@ -42,7 +42,7 @@ impl CredentialCipher {
             );
             *Key::<Aes256Gcm>::from_slice(&bytes)
         } else {
-            let key = Aes256Gcm::generate_key(OsRng);
+            let key = Key::<Aes256Gcm>::generate();
             if let Some(parent) = key_path.parent() {
                 std::fs::create_dir_all(parent)?;
             }
@@ -62,7 +62,7 @@ impl CredentialCipher {
     /// Encrypts `plaintext` into a self-describing string safe to embed in
     /// JSON.
     pub(crate) fn encrypt(&self, plaintext: &str) -> anyhow::Result<String> {
-        let nonce = Aes256Gcm::generate_nonce(OsRng);
+        let nonce = Nonce::<<Aes256Gcm as AeadCore>::NonceSize>::generate();
         let ciphertext = self
             .cipher
             .encrypt(&nonce, plaintext.as_bytes())
