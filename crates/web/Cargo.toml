@@ -20,3 +20,5 @@ jpeg-encoder.workspace = true
 
 [dev-dependencies]
 jpeg-decoder.workspace = true
+# For tests/router.rs: building an AppState needs a real client provider.
+rookery-instance-live = { path = "../instance-live" }

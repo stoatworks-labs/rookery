@@ -1384,6 +1384,7 @@ dependencies = [
  "rookery-core",
  "rookery-discovery",
  "rookery-fleet",
+ "rookery-instance-live",
  "serde",
  "serde_json",
  "tokio",

@@ -28,7 +28,7 @@ pub fn app(state: AppState) -> Router {
         .route("/ws", get(ws::ws_handler))
         .route("/api/instances", post(handlers::create_instance))
         .route(
-            "/api/instances/:id",
+            "/api/instances/{id}",
             put(handlers::update_instance).delete(handlers::delete_instance),
         )
         .route("/api/instances/{id}/send", post(handlers::send_to_instance))
