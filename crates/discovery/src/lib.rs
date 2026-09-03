@@ -317,22 +317,27 @@ fn swept_instance(host: String, version: Option<String>, needs_token: bool) -> D
 /// The address is preferred over the advertised host name: a `.local` name
 /// needs the resolver to work on every machine that later talks to it, and a
 /// literal address is what an operator can check by hand.
-fn from_service_info(info: &mdns_sd::ServiceInfo) -> DiscoveredInstance {
-    let properties = info.get_properties();
+// mdns-sd 0.21 resolves to a ResolvedService of public fields rather than a
+// ServiceInfo of getters. Same data: `host` for `get_hostname()`, `port` for
+// `get_port()`, `txt_properties` for `get_properties()`, and `addresses` as a
+// HashSet<ScopedIp> whose Display is the plain address, so the strings this
+// builds are unchanged.
+fn from_service_info(info: &mdns_sd::ResolvedService) -> DiscoveredInstance {
+    let properties = &info.txt_properties;
     let text = |key: &str| properties.get_property_val_str(key).map(|v| v.to_string());
 
     let addresses: Vec<String> = info
-        .get_addresses()
+        .addresses
         .iter()
         .map(|address| address.to_string())
         .collect();
 
     let host = preferred_address(&addresses)
-        .unwrap_or_else(|| info.get_hostname().trim_end_matches('.').to_string());
+        .unwrap_or_else(|| info.host.trim_end_matches('.').to_string());
 
     DiscoveredInstance {
         host,
-        http_port: info.get_port(),
+        http_port: info.port,
         version: text("ver"),
         // The instance says so itself, so the UI can ask for the token while
         // the operator is still looking at the add dialog.
