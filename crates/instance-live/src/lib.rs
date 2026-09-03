@@ -44,6 +44,25 @@ use rookery_osc::OscSender;
 /// interesting is happening is when a dashboard is least useful.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
+/// Resolve an instance's OSC destination without blocking a worker thread.
+///
+/// `to_socket_addrs` is synchronous getaddrinfo. Every send here runs inside
+/// `Fleet::send`'s `buffer_unordered(16)` on the multi-thread runtime, so one
+/// host that does not resolve — a machine renamed, DNS down, a `.local` name
+/// with mDNS filtered — parked a worker for the resolver timeout (5-30 s).
+/// While parked, that worker served no web request, no WebSocket push and no
+/// northbound cue, and the rest of the group's datagrams queued behind it.
+///
+/// `tokio::net::lookup_host` runs the same lookup on the blocking pool, so a
+/// slow resolver costs this one future and nothing else. Resolution stays
+/// per-send, which is deliberate — see `Instance::osc_target_blocking`.
+async fn resolve_osc_target(instance: &Instance) -> anyhow::Result<std::net::SocketAddr> {
+    tokio::net::lookup_host((instance.host.as_str(), instance.osc_port))
+        .await?
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("cannot resolve {}:{}", instance.host, instance.osc_port))
+}
+
 pub struct LiveClient {
     instance: Instance,
     sender: OscSender,
@@ -111,7 +130,7 @@ impl LiveClient {
 #[async_trait]
 impl InstanceClient for LiveClient {
     async fn send(&self, command: &Command, source: Option<&str>) -> anyhow::Result<()> {
-        let target = self.instance.osc_target()?;
+        let target = resolve_osc_target(&self.instance).await?;
         let message = command.to_osc(&self.instance.osc_prefix, source);
         tracing::info!(
             instance = %self.instance.name,
@@ -127,7 +146,7 @@ impl InstanceClient for LiveClient {
         if commands.is_empty() {
             return Ok(());
         }
-        let target = self.instance.osc_target()?;
+        let target = resolve_osc_target(&self.instance).await?;
         let messages: Vec<_> = commands
             .iter()
             .map(|c| c.to_osc(&self.instance.osc_prefix, source))

@@ -21,7 +21,7 @@ use rookery_core::Registry;
 use rookery_discovery::Discovery;
 use rookery_fleet::Fleet;
 use rookery_instance_live::LiveClientProvider;
-use rookery_web::{AppState, app};
+use rookery_web::{app, AppState};
 
 fn tempdir() -> std::path::PathBuf {
     let dir = std::env::temp_dir().join(format!(

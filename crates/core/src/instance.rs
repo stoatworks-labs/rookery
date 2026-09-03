@@ -140,12 +140,19 @@ impl Instance {
         format!("http://{}:{}", self.host, self.http_port)
     }
 
-    /// Resolves the OSC destination.
+    /// Resolves the OSC destination, **blocking the calling thread**.
     ///
-    /// Done eagerly per send rather than cached: a show machine's address can
-    /// change between DHCP leases, and a fleet tool that keeps sending to a
-    /// stale address looks exactly like one whose commands are being ignored.
-    pub fn osc_target(&self) -> anyhow::Result<SocketAddr> {
+    /// Resolution is done eagerly per send rather than cached: a show machine's
+    /// address can change between DHCP leases, and a fleet tool that keeps
+    /// sending to a stale address looks exactly like one whose commands are
+    /// being ignored.
+    ///
+    /// `to_socket_addrs` is synchronous getaddrinfo, so a host that does not
+    /// resolve parks this thread for the resolver timeout — typically 5-30 s.
+    /// Do not call this from async code: `rookery-instance-live` has an async
+    /// resolver for the send path, and that is where sends must go. This one is
+    /// for synchronous callers only (this crate carries no tokio on purpose).
+    pub fn osc_target_blocking(&self) -> anyhow::Result<SocketAddr> {
         (self.host.as_str(), self.osc_port)
             .to_socket_addrs()?
             .next()

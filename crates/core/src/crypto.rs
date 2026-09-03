@@ -115,11 +115,19 @@ fn encode_hex(bytes: &[u8]) -> String {
 
 fn decode_hex(s: &str) -> anyhow::Result<Vec<u8>> {
     anyhow::ensure!(s.len().is_multiple_of(2), "invalid hex string (odd length)");
-    (0..s.len())
-        .step_by(2)
-        .map(|i| {
-            u8::from_str_radix(&s[i..i + 2], 16)
-                .map_err(|e| anyhow::anyhow!("invalid hex string: {e}"))
+    // Over BYTES, not over &str slices. `&s[i..i + 2]` panics outright when a
+    // multibyte character starts at an even offset ("byte index N is not a char
+    // boundary"), and a hand-edited credentials.key or a token pasted into
+    // registry.json by hand is exactly where that happens — pre-empting the
+    // clear "delete it and restart" error this is supposed to return.
+    s.as_bytes()
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|pair| {
+            let hex = std::str::from_utf8(pair)
+                .map_err(|_| anyhow::anyhow!("invalid hex string: not ASCII"))?;
+            u8::from_str_radix(hex, 16).map_err(|e| anyhow::anyhow!("invalid hex string: {e}"))
         })
         .collect()
 }
@@ -158,6 +166,29 @@ mod tests {
             cipher.decrypt_or_pass_through("show-token").unwrap(),
             "show-token"
         );
+    }
+
+    #[test]
+    fn a_multibyte_character_is_an_error_not_a_panic() {
+        // A hand-edited credentials.key or a token pasted into registry.json is
+        // the realistic source. Slicing &str by byte offset used to panic here
+        // ("byte index 2 is not a char boundary"), which killed the process
+        // before load_or_create could tell the operator to delete the key.
+        // The cases that matter are EVEN byte length — an odd one is caught by
+        // the ensure! above before any slicing happens. These get past it and
+        // then cut a multibyte character in half.
+        assert!(decode_hex("ab€x").is_err()); // 6 bytes; [2..4] splits the €
+        assert!(decode_hex("€€").is_err()); // 6 bytes; [0..2] splits the first €
+        assert!(decode_hex("zz").is_err()); // still rejects plain non-hex
+        assert!(decode_hex("abc").is_err()); // still rejects odd length
+        assert_eq!(decode_hex("00ff").unwrap(), vec![0x00, 0xff]);
+    }
+
+    #[test]
+    fn a_multibyte_token_is_refused_rather_than_crashing_the_process() {
+        let cipher = cipher_at(&tempdir());
+        let token = format!("{PREFIX}ab€x");
+        assert!(cipher.decrypt_or_pass_through(&token).is_err());
     }
 
     #[test]

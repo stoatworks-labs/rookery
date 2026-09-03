@@ -12,7 +12,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
-use std::sync::RwLock;
+use std::sync::{Mutex, RwLock};
 
 use crate::crypto::CredentialCipher;
 use crate::instance::{Instance, InstanceId};
@@ -21,6 +21,10 @@ pub struct Registry {
     path: PathBuf,
     instances: RwLock<HashMap<InstanceId, Instance>>,
     cipher: CredentialCipher,
+    /// Held across the whole of `save`, so two concurrent writes cannot
+    /// serialise a snapshot each and then race to put them on disk. It does
+    /// not guard the map — `instances` does that — only the file.
+    save_lock: Mutex<()>,
 }
 
 impl Registry {
@@ -57,10 +61,25 @@ impl Registry {
             path,
             instances: RwLock::new(instances),
             cipher,
+            save_lock: Mutex::new(()),
         })
     }
 
+    /// Serialise the whole registry and replace the file with it.
+    ///
+    /// Write-then-rename, because the alternative loses the fleet: a plain
+    /// `fs::write` truncates first, so a crash or a power cut between the
+    /// truncate and the last byte leaves a short file — and `load_or_new`
+    /// parses eagerly, so the next start fails outright with a serde error
+    /// rather than coming up empty. `rename` within a directory is atomic, so
+    /// a reader either sees the whole old file or the whole new one.
+    ///
+    /// The lock is held across serialise-and-replace so two concurrent PUTs
+    /// cannot interleave; without it the later writer could still lose to the
+    /// earlier one's rename.
     fn save(&self) -> anyhow::Result<()> {
+        let _guard = self.save_lock.lock().expect("registry save lock poisoned");
+
         let mut list: Vec<Instance> = self
             .instances
             .read()
@@ -78,7 +97,12 @@ impl Registry {
         if let Some(parent) = self.path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        std::fs::write(&self.path, raw)?;
+
+        // Same directory as the target: rename is only atomic within a
+        // filesystem, and /tmp may well be a different one.
+        let tmp = self.path.with_extension("json.tmp");
+        std::fs::write(&tmp, raw)?;
+        std::fs::rename(&tmp, &self.path)?;
         Ok(())
     }
 
@@ -249,5 +273,47 @@ mod tests {
             !path.exists(),
             "a rejected instance must not create the file"
         );
+    }
+
+    #[test]
+    fn saving_leaves_no_temp_file_behind() {
+        let dir = tempdir();
+        let path = dir.join("registry.json");
+        let registry = Registry::load_or_new(path.clone()).unwrap();
+        registry.upsert(Instance::new("gfx-1", "10.0.0.1")).unwrap();
+
+        assert!(path.exists());
+        assert!(
+            !path.with_extension("json.tmp").exists(),
+            "the temp file must be renamed into place, not left beside it"
+        );
+    }
+
+    #[test]
+    fn concurrent_saves_leave_a_parseable_file() {
+        // The failure this guards is a torn registry.json: load_or_new parses
+        // eagerly, so a half-written file does not mean "no instances", it means
+        // rookery will not start at all.
+        let dir = tempdir();
+        let path = dir.join("registry.json");
+        let registry = std::sync::Arc::new(Registry::load_or_new(path.clone()).unwrap());
+
+        let mut handles = Vec::new();
+        for n in 0..8 {
+            let registry = registry.clone();
+            handles.push(std::thread::spawn(move || {
+                for i in 0..10 {
+                    let mut instance = Instance::new(format!("gfx-{n}-{i}"), "10.0.0.1");
+                    instance.credentials.token = Some(format!("token-{n}-{i}"));
+                    registry.upsert(instance).unwrap();
+                }
+            }));
+        }
+        for h in handles {
+            h.join().unwrap();
+        }
+
+        let reloaded = Registry::load_or_new(path).expect("registry.json must still parse");
+        assert_eq!(reloaded.list().len(), 80);
     }
 }
