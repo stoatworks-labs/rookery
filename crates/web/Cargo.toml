@@ -22,3 +22,7 @@ jpeg-encoder.workspace = true
 jpeg-decoder.workspace = true
 # For tests/router.rs: building an AppState needs a real client provider.
 rookery-instance-live = { path = "../instance-live" }
+# For tests/ws_dedupe.rs: a real client on the other end of /ws.
+tokio-tungstenite = "0.29"
+rookery-instance-mock = { path = "../instance-mock" }
+futures.workspace = true

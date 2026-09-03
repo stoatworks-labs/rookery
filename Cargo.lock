@@ -1379,15 +1379,18 @@ version = "0.2.1"
 dependencies = [
  "anyhow",
  "axum",
+ "futures",
  "jpeg-decoder",
  "jpeg-encoder",
  "rookery-core",
  "rookery-discovery",
  "rookery-fleet",
  "rookery-instance-live",
+ "rookery-instance-mock",
  "serde",
  "serde_json",
  "tokio",
+ "tokio-tungstenite",
  "tracing",
 ]
 

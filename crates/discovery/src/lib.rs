@@ -49,7 +49,17 @@ use serde::Serialize;
 
 /// WebLinked's default HTTP control port.
 const WEBLINKED_HTTP_PORT: u16 = 7654;
-const MAX_HOSTS_TO_PROBE: usize = 512;
+/// Total addresses one scan will probe, across every interface.
+///
+/// Sized so a full /22 fits — that is the largest subnet the sweep accepts, and
+/// the module docs promise it is swept. At 512 it did not fit, so every /22 was
+/// half-swept with nothing logged. Two of them still fit here; a third is
+/// skipped whole and said so, rather than being truncated mid-range.
+///
+/// The cost is time, not traffic: PROBE_CONCURRENCY at PROBE_TIMEOUT works out
+/// around 40 addresses a second against hosts that do not answer, so a full /22
+/// is roughly 25 s of scanning.
+const MAX_HOSTS_TO_PROBE: usize = 2044;
 const PROBE_CONCURRENCY: usize = 64;
 const PROBE_TIMEOUT: Duration = Duration::from_millis(1500);
 /// A key in `/api/state` that nothing else on a show network emits.
@@ -395,19 +405,25 @@ fn address_rank(ip: &std::net::IpAddr) -> u8 {
 /// skipping any subnet too large to sweep safely. Same rule as flock's
 /// `subnet_probe`.
 fn local_ipv4_candidates() -> Vec<Ipv4Addr> {
-    let mut candidates = Vec::new();
     let Ok(interfaces) = if_addrs::get_if_addrs() else {
-        return candidates;
+        return Vec::new();
     };
-    for iface in interfaces {
-        if iface.is_loopback() {
-            continue;
-        }
-        let if_addrs::IfAddr::V4(v4) = iface.addr else {
-            continue;
-        };
-        let ip = u32::from(v4.ip);
-        let mask = u32::from(v4.netmask);
+    let subnets: Vec<(u32, u32)> = interfaces
+        .into_iter()
+        .filter(|iface| !iface.is_loopback())
+        .filter_map(|iface| match iface.addr {
+            if_addrs::IfAddr::V4(v4) => Some((u32::from(v4.ip), u32::from(v4.netmask))),
+            _ => None,
+        })
+        .collect();
+    candidates_for(&subnets)
+}
+
+/// The address expansion, split out from interface enumeration so it can be
+/// tested against a subnet this machine does not have.
+fn candidates_for(subnets: &[(u32, u32)]) -> Vec<Ipv4Addr> {
+    let mut candidates = Vec::new();
+    for &(ip, mask) in subnets {
         let network = ip & mask;
         let host_bits = 32 - mask.count_ones();
         if !(1..=10).contains(&host_bits) {
@@ -416,11 +432,29 @@ fn local_ipv4_candidates() -> Vec<Ipv4Addr> {
             continue;
         }
         let host_count = 1u32 << host_bits;
+        let usable = host_count.saturating_sub(2) as usize;
+
+        // Whole subnet or none of it. Stopping partway through — which is what
+        // a running total did — sweeps the bottom half of a /22 and silently
+        // never probes the top, so an instance at 10.0.3.x on a 10.0.0.0/22
+        // show network is reported as "Nothing found" by a scan that never
+        // looked at it. The host_bits check above already bounds one subnet to
+        // a /22 (1022 usable), so this only ever skips a LATER interface.
+        if candidates.len() + usable > MAX_HOSTS_TO_PROBE {
+            tracing::warn!(
+                subnet = %Ipv4Addr::from(network),
+                host_bits,
+                usable,
+                probed_so_far = candidates.len(),
+                budget = MAX_HOSTS_TO_PROBE,
+                "subnet not swept: it does not fit in the remaining probe budget. \
+                 Instances on it must be added by hand."
+            );
+            continue;
+        }
+
         for i in 1..host_count.saturating_sub(1) {
             candidates.push(Ipv4Addr::from(network | i));
-            if candidates.len() >= MAX_HOSTS_TO_PROBE {
-                return candidates;
-            }
         }
     }
     candidates
@@ -561,5 +595,62 @@ mod tests {
         let mut b = swept_instance("192.168.1.40".into(), None, false);
         b.http_port = 7664;
         assert_ne!(a.key(), b.key());
+    }
+
+    /// 10.0.0.0/22 with a WebLinked at 10.0.3.x — the case the module docs
+    /// promise is swept, and the one a 512-address running total silently cut
+    /// in half.
+    #[test]
+    fn a_slash_22_is_swept_all_the_way_to_the_top() {
+        let subnets = [(u32::from(Ipv4Addr::new(10, 0, 1, 5)), 0xffff_fc00)];
+        let candidates = candidates_for(&subnets);
+
+        assert_eq!(candidates.len(), 1022, "a /22 has 1022 usable addresses");
+        assert!(candidates.contains(&Ipv4Addr::new(10, 0, 0, 1)));
+        assert!(
+            candidates.contains(&Ipv4Addr::new(10, 0, 3, 200)),
+            "the top quarter must be probed, not dropped"
+        );
+        assert!(!candidates.contains(&Ipv4Addr::new(10, 0, 0, 0)), "network");
+        assert!(
+            !candidates.contains(&Ipv4Addr::new(10, 0, 3, 255)),
+            "broadcast"
+        );
+    }
+
+    #[test]
+    fn several_interfaces_are_all_swept() {
+        let subnets = [
+            (u32::from(Ipv4Addr::new(192, 168, 1, 10)), 0xffff_ff00),
+            (u32::from(Ipv4Addr::new(192, 168, 2, 10)), 0xffff_ff00),
+            (u32::from(Ipv4Addr::new(192, 168, 3, 10)), 0xffff_ff00),
+        ];
+        let candidates = candidates_for(&subnets);
+
+        assert_eq!(candidates.len(), 254 * 3);
+        // The third interface used to be past the budget and never probed.
+        assert!(candidates.contains(&Ipv4Addr::new(192, 168, 3, 77)));
+    }
+
+    #[test]
+    fn a_subnet_that_does_not_fit_is_skipped_whole_not_truncated() {
+        // Three /22s: two fit the budget, the third cannot. It must be dropped
+        // entirely rather than half-swept, so "not found" never means "found
+        // nothing in the part we looked at".
+        let subnets = [
+            (u32::from(Ipv4Addr::new(10, 0, 0, 5)), 0xffff_fc00),
+            (u32::from(Ipv4Addr::new(10, 1, 0, 5)), 0xffff_fc00),
+            (u32::from(Ipv4Addr::new(10, 2, 0, 5)), 0xffff_fc00),
+        ];
+        let candidates = candidates_for(&subnets);
+
+        assert_eq!(candidates.len(), 1022 * 2);
+        assert!(candidates.iter().all(|ip| ip.octets()[1] != 2));
+    }
+
+    #[test]
+    fn a_subnet_bigger_than_a_slash_22_is_not_swept_at_all() {
+        let subnets = [(u32::from(Ipv4Addr::new(10, 0, 0, 5)), 0xffff_f800)]; // /21
+        assert!(candidates_for(&subnets).is_empty());
     }
 }

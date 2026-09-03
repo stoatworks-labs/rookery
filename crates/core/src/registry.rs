@@ -12,7 +12,12 @@
 
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, RwLock};
+
+/// Distinguishes the scratch files of two saves in one process; the pid
+/// distinguishes them across processes.
+static SAVE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 use crate::crypto::CredentialCipher;
 use crate::instance::{Instance, InstanceId};
@@ -99,10 +104,26 @@ impl Registry {
         }
 
         // Same directory as the target: rename is only atomic within a
-        // filesystem, and /tmp may well be a different one.
-        let tmp = self.path.with_extension("json.tmp");
+        // filesystem, and the system temp dir may well be a different one.
+        //
+        // The name is unique per save, not a fixed "registry.json.tmp". The
+        // save lock only serialises THIS Registry, so a second process — or a
+        // second Registry over the same path — sharing one scratch name means
+        // one of them renames the file out from under the other, and the loser
+        // fails with ENOENT having written nothing.
+        let unique = format!(
+            "{}.{}.tmp",
+            std::process::id(),
+            SAVE_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        );
+        let tmp = self.path.with_extension(unique);
         std::fs::write(&tmp, raw)?;
-        std::fs::rename(&tmp, &self.path)?;
+        // Leaving the scratch file behind on a failed rename would accumulate
+        // silently, so clear it up before reporting.
+        if let Err(e) = std::fs::rename(&tmp, &self.path) {
+            let _ = std::fs::remove_file(&tmp);
+            return Err(e.into());
+        }
         Ok(())
     }
 
@@ -283,9 +304,15 @@ mod tests {
         registry.upsert(Instance::new("gfx-1", "10.0.0.1")).unwrap();
 
         assert!(path.exists());
+        let strays: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|name| name.ends_with(".tmp"))
+            .collect();
         assert!(
-            !path.with_extension("json.tmp").exists(),
-            "the temp file must be renamed into place, not left beside it"
+            strays.is_empty(),
+            "the scratch file must be renamed into place, not left beside it: {strays:?}"
         );
     }
 

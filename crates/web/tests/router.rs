@@ -24,8 +24,13 @@ use rookery_instance_live::LiveClientProvider;
 use rookery_web::{app, AppState};
 
 fn tempdir() -> std::path::PathBuf {
+    // Counter as well as clock: SystemTime on macOS ticks in microseconds, so
+    // parallel tests sharing one directory share one registry.json.
+    static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let dir = std::env::temp_dir().join(format!(
-        "rookery-web-test-{}",
+        "rookery-web-test-{}-{}-{}",
+        std::process::id(),
+        SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()

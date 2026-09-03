@@ -145,8 +145,13 @@ mod tests {
     use rookery_osc::Arg;
 
     fn registry_with(names: &[&str]) -> Registry {
+        // Counter as well as clock: SystemTime on macOS ticks in microseconds,
+        // so parallel tests sharing one directory share one registry.json.
+        static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let dir = std::env::temp_dir().join(format!(
-            "rookery-dispatch-{}",
+            "rookery-dispatch-{}-{}-{}",
+            std::process::id(),
+            SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()

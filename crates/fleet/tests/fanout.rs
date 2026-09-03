@@ -10,9 +10,22 @@ use rookery_instance_mock::MockInstance;
 
 const SETTLE: Duration = Duration::from_secs(2);
 
+/// Distinguishes directories taken in the same clock tick — see `tempdir`.
+static TEMPDIR_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// A directory of this test's own.
+///
+/// The counter is not decoration. `SystemTime` on macOS advances in
+/// microseconds, not nanoseconds, so a timestamp alone collided between tests
+/// running in parallel: two of them shared a registry.json, the second loaded
+/// the first's instances, and a group that should have had two members had
+/// three. That produced an assertion failure in whichever test lost the race —
+/// a flake that predates this branch and hit roughly one run in three.
 fn tempdir() -> std::path::PathBuf {
     let dir = std::env::temp_dir().join(format!(
-        "rookery-fleet-test-{}",
+        "rookery-fleet-test-{}-{}-{}",
+        std::process::id(),
+        TEMPDIR_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
