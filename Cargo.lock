@@ -1273,7 +1273,7 @@ dependencies = [
 
 [[package]]
 name = "rookery"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "axum",
@@ -1292,7 +1292,7 @@ dependencies = [
 
 [[package]]
 name = "rookery-core"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1306,7 +1306,7 @@ dependencies = [
 
 [[package]]
 name = "rookery-discovery"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "futures",
@@ -1321,7 +1321,7 @@ dependencies = [
 
 [[package]]
 name = "rookery-fleet"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "futures",
@@ -1336,7 +1336,7 @@ dependencies = [
 
 [[package]]
 name = "rookery-instance-live"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1351,7 +1351,7 @@ dependencies = [
 
 [[package]]
 name = "rookery-instance-mock"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "axum",
@@ -1365,7 +1365,7 @@ dependencies = [
 
 [[package]]
 name = "rookery-osc"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "serde",
@@ -1375,7 +1375,7 @@ dependencies = [
 
 [[package]]
 name = "rookery-web"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "axum",
