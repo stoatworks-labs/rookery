@@ -300,9 +300,10 @@ from the spec rather than from rookery's own.
 
 **Not verified:** anything off this machine — everything above was loopback,
 so no real show network, switch or VLAN has been involved. Also unverified:
-discovery against a real LAN, Windows and Linux (never built or run), scale
-beyond three instances, a token-protected real instance, and multi-source
-addressing against real WebLinked rather than the simulator.
+discovery against a real LAN, Windows and Linux (built in CI and shipped in
+every release since v0.1.0, but never run — CI runs `cargo test` on Linux, not
+the binary), scale beyond three instances, a token-protected real instance,
+and multi-source addressing against real WebLinked rather than the simulator.
 
 [docs/verification.md](docs/verification.md) is the authority and says
 precisely which is which. It is deliberately more pessimistic than this

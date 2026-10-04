@@ -82,8 +82,9 @@ moment, and the amber one recovered to green when it caught up.
   unverified there: a browse **across a real switch or VLAN** — every packet so
   far stayed on one host — and any responder other than macOS's mDNSResponder,
   so avahi and the Windows responder have never been browsed.
-- **Windows and Linux.** Never built or run. Nothing here is
-  platform-specific, but that is an argument, not a test.
+- **Windows and Linux.** Built in CI and shipped in every release since
+  v0.1.0, but never run: CI runs `cargo test` on Linux, not the binary.
+  Nothing here is platform-specific, but that is an argument, not a test.
 - **Scale.** Three instances. Nothing establishes behaviour at forty.
 - **A token-protected real instance.** The token path is covered against the
   mock only; no real WebLinked was started with `--token`.
