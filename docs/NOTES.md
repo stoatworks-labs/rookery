@@ -12,7 +12,7 @@ Cross-cutting notes that are not specific to this repo live in
 **rookery** — one web UI driving any number of [weblinked](https://github.com/stoatworks-labs/weblinked/blob/main/docs/NOTES.md) (`weblinked`) instances
 at once, modelled on **flock**. `~/Projects/rookery`, Rust workspace,
 **PUBLIC MIT**, `stoatworks-labs/rookery`. Created and released 2026-08-10.
-**v0.2.3 is current** (2026-10-04). v0.1.1 was the first full set — 16 assets
+**v0.2.4 is current** (2026-10-06, a dependency release). v0.1.1 was the first full set — 16 assets
 from CI (6 targets, .deb/.rpm, macOS .pkg/.dmg, Windows NSIS), signed +
 notarised — and v0.2.3 makes the macOS build one universal image. **Video `fMPwYG5TRAs`**, IG reel published. No Tauri launcher, deliberately: it is a headless server with an
 embedded web UI, so the release workflow is flock's minus the launcher job.
