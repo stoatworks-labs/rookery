@@ -109,7 +109,7 @@ rookery makes that one action, and shows you all six at once while you do it.
 - **Live preview, and interaction.** Every instance shows what it's actually
   putting out; open one larger and you can click and type into the page itself.
 - **Discovery.** A browse for the `_weblinked._tcp` advertisement WebLinked
-  publishes from 0.8.0 (which carries its **OSC port and prefix**, the two
+  publishes from 1.0.0 (which carries its **OSC port and prefix**, the two
   things its HTTP API can't report), backed up by an active subnet probe for
   older instances, instances started with `--no-mdns`, and networks where
   multicast is filtered.

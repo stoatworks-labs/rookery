@@ -45,7 +45,7 @@ Open <http://127.0.0.1:8090>, add an instance by hostname, and give it a group t
 to maintain, and membership is worked out when a command is sent, so retagging takes effect on the
 next cue without anything needing to be rebuilt.
 
-**Discovery** browses for the advertisement WebLinked publishes from 0.8.0 (which carries its
+**Discovery** browses for the advertisement WebLinked publishes from 1.0.0 (which carries its
 **OSC port and prefix**, the two things its HTTP API can't report), backed up by an active subnet
 probe for older instances, instances started with `--no-mdns`, and networks where multicast is
 filtered.
@@ -182,6 +182,6 @@ they really are dropping ticks all the time, which is expected on a backgrounded
 **A preview is eating bandwidth.** Lower that instance's preview factor from the large view, and
 remember it shrinks the picture on that machine's own control page too.
 
-**Discovery finds nothing.** Instances older than 0.8.0 don't advertise, `--no-mdns` turns it off,
+**Discovery finds nothing.** Instances older than 1.0.0 don't advertise, `--no-mdns` turns it off,
 and multicast is filtered on plenty of venue networks. The active subnet probe covers those;
 failing that, add the instance by hostname.

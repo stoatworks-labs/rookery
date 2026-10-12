@@ -83,7 +83,7 @@ ticks.
 
 ## 5a. Discovery is two mechanisms, and the difference is load-bearing
 
-WebLinked advertises `_weblinked._tcp` from 0.8.0. The browse is the good path
+WebLinked advertises `_weblinked._tcp` from 1.0.0. The browse is the good path
 — it finds instances on any port, on any subnet multicast reaches, and its TXT
 record carries the **OSC port and prefix**, which appear *nowhere* in
 WebLinked's HTTP API.
@@ -100,7 +100,7 @@ it `None` rather than defaulting it**. `found_via` exists so the UI can say
 collapse those two into one number; the whole design says a guess must never
 look like a fact.
 
-The subnet probe stays for instances older than 0.8.0, instances started with
+The subnet probe stays for instances older than 1.0.0, instances started with
 `--no-mdns`, and networks where multicast is filtered — which is common on
 managed venue networks.
 
