@@ -2,26 +2,26 @@
 
 > **AI-assisted project.** This codebase was created with
 > [Claude](https://claude.com/claude-code) (Anthropic), directed and reviewed
-> by a human author. Treat this as an early-stage hobby project: it has been
-> exercised end-to-end against three real WebLinked instances on one machine —
-> see [Status](#status) for exactly what that covers and what it does not.
+> by a human author. Treat it as an early-stage hobby project: it's been run
+> end to end against three real WebLinked instances on one machine.
+> [Status](#status) has what that covers and what it doesn't.
 
-One web UI for driving any number of
-[WebLinked](https://github.com/stoatworks-labs/weblinked) instances at once.
-Tag them into groups, see every instance's state on one screen, and change
-what is on air across a whole group with one action — or one OSC cue from a
-lighting desk.
+One web UI for driving as many
+[WebLinked](https://github.com/stoatworks-labs/weblinked) instances as you've
+got, all at once. Tag them into groups, see every instance's state on one
+screen, and change what's on air across a whole group with one action, or with
+one OSC cue from a lighting desk.
 
-A sibling to [flock](https://github.com/stoatworks-labs/flock), which does the
-same job for BirdDog Play decoders.
+It's a sibling to [flock](https://github.com/stoatworks-labs/flock), which does
+the same job for BirdDog Play decoders.
 
-[![Watch it running — 60 seconds](docs/video-thumb.png)](https://www.youtube.com/watch?v=fMPwYG5TRAs)
+[![Watch it running (60 seconds)](docs/video-thumb.png)](https://www.youtube.com/watch?v=fMPwYG5TRAs)
 
 *A 60-second tour: three real WebLinked 0.7.1 instances, two tagged `stage` and
 one `lobby`, driven from rookery's own controls and by one OSC cue sent from
-outside the browser. Not a mockup — and the amber dots are real: all three are
-headless background processes, which macOS throttles, so they genuinely are
-dropping ticks. See [Health](#health-what-the-dots-mean).*
+outside the browser. It isn't a mockup, and the amber dots are real too: all
+three are headless background processes, which macOS throttles, so they really
+are dropping ticks. See [Health](#health-what-the-dots-mean).*
 
 ![rookery: a group tree on the left, fan-out controls and per-instance state in the middle, an activity log on the right](docs/screenshots/overview.png)
 
@@ -84,33 +84,33 @@ macOS builds are signed and notarised and open normally. The Windows builds are 
 WebLinked already has a good control page and a
 [Companion module](https://github.com/stoatworks-labs/companion-module-weblinked).
 Both drive **one instance**. The moment a show has six machines pushing
-graphics to six screens, you have six browser tabs, and "change the lower
-third on every stage machine" is six actions performed in sequence by
+graphics to six screens, you've got six browser tabs, and "change the lower
+third on every stage machine" is six actions done one after another by
 somebody who has to get all six right.
 
 rookery makes that one action, and shows you all six at once while you do it.
 
 ## What it does
 
-- **Groups from tags.** An instance can be in as many groups as you like;
-  there is no group object to maintain. Membership is resolved when a command
+- **Groups from tags.** An instance can be in as many groups as you like, and
+  there's no group object to maintain. Membership is worked out when a command
   is sent, so retagging takes effect on the next cue.
-- **Fan-out over OSC.** Every WebLinked verb — navigate, reload, run a script
-  in the page, mute, set the raster, start or stop a named output — aimed at
+- **Fan-out over OSC.** Every WebLinked verb (navigate, reload, run a script
+  in the page, mute, set the raster, start or stop a named output), aimed at
   one instance, one group, or everything.
-- **A real dashboard.** Each instance is polled over its HTTP API, so you can
+- **A proper dashboard.** Each instance is polled over its HTTP API, so you can
   see what each one is actually showing, which outputs are running, how many
   NDI receivers are attached, and whether the clock is keeping up.
 - **Northbound OSC.** A desk, a QLab cue or a Companion button can drive the
   whole fleet: `/rookery/group/stage/url`. The verbs are WebLinked's own, so
-  an existing button is retargeted by editing the front of the address.
+  you retarget an existing button by editing the front of the address.
 - **Multi-source aware.** WebLinked can run several independent pipelines in
   one process; rookery can address one of them across a whole group.
-- **Live preview, and interaction.** Every instance shows what it is actually
+- **Live preview, and interaction.** Every instance shows what it's actually
   putting out; open one larger and you can click and type into the page itself.
 - **Discovery.** A browse for the `_weblinked._tcp` advertisement WebLinked
-  publishes from 0.8.0 — which carries its **OSC port and prefix**, the two
-  things its HTTP API cannot report — backed by an active subnet probe for
+  publishes from 0.8.0 (which carries its **OSC port and prefix**, the two
+  things its HTTP API can't report), backed up by an active subnet probe for
   older instances, instances started with `--no-mdns`, and networks where
   multicast is filtered.
 
@@ -122,23 +122,23 @@ Each instance shows a live picture of its own output, taken from WebLinked's
 **Interaction is off until you arm it.** The large view has a *Take control*
 toggle; until you press it the picture is view-only and a stray click does
 nothing. Armed, the pane turns red and mouse and keyboard go straight into the
-page — which, on a machine that is on air, changes what the audience sees. Esc
+page, which, on a machine that's on air, changes what the audience sees. Esc
 releases it.
 
 ### The cost, and the setting that governs it
 
-WebLinked's preview is a **raw BGRA buffer** — 8.3 MB a frame at its default
-factor of 1. rookery never puts that on the browser: it fetches it, encodes
-JPEG, and hangs an ETag on WebLinked's paint counter, so a graphic that is not
+WebLinked's preview is a **raw BGRA buffer**, 8.3 MB a frame at its default
+factor of 1. rookery never sends that to the browser: it fetches it, encodes a
+JPEG, and hangs an ETag on WebLinked's paint counter, so a graphic that isn't
 moving costs a `304` with no body at all.
 
 Measured on three instances at ~4 fps: **0.19 Mbit/s** for animated pages,
 **zero** for static ones. Without the JPEG and the ETag the same three would be
-95 MB/s.
+95 MB/s, which is a lot to ask of a show network for some thumbnails.
 
-The remaining lever is the instance's own preview factor, offered per-instance
-in the large view. It is **opt-in** because it is not rookery's setting to
-change quietly: the factor belongs to that instance's preview output, and
+The remaining lever is the instance's own preview factor, offered per instance
+in the large view. It's **opt-in**, because it isn't rookery's setting to change
+behind your back: the factor belongs to that instance's preview output, and
 turning it down also shrinks the picture on that machine's own control page.
 
 ```
@@ -161,17 +161,17 @@ group tag.
 ### The one thing that will catch you out
 
 **WebLinked binds its HTTP server to `127.0.0.1` by default.** Start each
-instance with `--bind 0.0.0.0` or rookery cannot poll it:
+instance with `--bind 0.0.0.0` or rookery can't poll it:
 
 ```bash
 weblinked --url https://example.com --ndi=Graphic --bind 0.0.0.0
 ```
 
-Without that, commands go out fine — WebLinked's OSC listener is on
-`0.0.0.0` already — and no state ever comes back. The instance shows as
-unreachable while quietly doing everything you tell it. rookery reports that
-honestly rather than guessing, but it is worth knowing before you go looking
-for a network fault that isn't there.
+Without that, commands go out fine (WebLinked's OSC listener is on `0.0.0.0`
+already) and no state ever comes back. The instance shows as unreachable while
+happily doing everything you tell it. rookery reports it as it finds it rather
+than guessing, but it's worth knowing before you go hunting for a network fault
+that isn't there.
 
 ## Sending a command
 
@@ -209,7 +209,7 @@ The response is always the per-instance breakdown, never a single ok:
 
 ## Driving it from a desk
 
-Enable the northbound listener in `config/rookery.toml`:
+Turn on the northbound listener in `config/rookery.toml`:
 
 ```toml
 osc_bind = "0.0.0.0:7656"
@@ -222,30 +222,30 @@ osc_bind = "0.0.0.0:7656"
 /rookery/group/<tag>/source/<source-id>/<verb>
 ```
 
-The verbs are WebLinked's, unchanged — `url`, `reload`, `script`, `mute`,
-`format`, `output/<name>` — so a Companion button already aimed at one
-WebLinked becomes a whole-group button by editing the front of the address:
+The verbs are WebLinked's, unchanged (`url`, `reload`, `script`, `mute`,
+`format`, `output/<name>`), so a Companion button already aimed at one
+WebLinked becomes a whole-group button when you edit the front of the address:
 
 ```
 before:  /weblinked/source/lower-third/output/Graphic
 after:   /rookery/group/stage/source/lower-third/output/Graphic
 ```
 
-Full grammar and the reasoning in [docs/protocol.md](docs/protocol.md).
+The full grammar, and why it's like that, is in [docs/protocol.md](docs/protocol.md).
 
 ## A send is not a confirmation
 
-This is the design fact worth internalising before relying on rookery.
+This is the one to get your head round before you rely on rookery.
 
 OSC over UDP has no acknowledgement, and WebLinked sends nothing back. So
-when rookery says a command was **sent**, it means exactly one thing: *the
-datagram left this machine*. It does not mean the instance received it,
-parsed it, or acted on it.
+when rookery says a command was **sent**, it means one thing only: *the
+datagram left this machine*. It doesn't mean the instance received it,
+parsed it or acted on it.
 
-That is why rookery polls every instance's HTTP API. **The dashboard is the
+That's why rookery polls every instance's HTTP API. **The dashboard is the
 confirmation, not the send.** Nothing in the UI or the API presents a
-successful send as a confirmed change, and it never will — the network cannot
-support the claim.
+successful send as a confirmed change, and it never will, because the network
+can't back that claim up.
 
 ## Health: what the dots mean
 
@@ -258,32 +258,32 @@ support the claim.
 | grey (unknown) | Not polled, or not yet heard from. Never guessed at |
 
 **"Dropping ticks right now" is a delta, not a total.** WebLinked's
-`dropped_ticks` is cumulative since it started, and a healthy instance
-accumulates them — a real one measured here sat at 346 out of 2205 and
-climbing, purely because macOS throttles a backgrounded process. Colouring on
-the total would paint every mature instance permanently amber, and an
-indicator that is always amber tells an operator nothing. rookery compares
+`dropped_ticks` counts up from the moment it starts, and a healthy instance
+piles them up: a real one measured here sat at 346 out of 2205 and climbing,
+purely because macOS throttles a backgrounded process. Colouring on the total
+would paint every instance that's been up for a while permanently amber, and a
+light that's always amber tells an operator nothing. rookery compares
 successive polls instead.
 
 ## Security
 
 **rookery has no authentication, and neither does the thing it drives.**
 
-WebLinked's OSC listener accepts commands from anyone who can reach UDP 7655
-— that is the protocol, not a choice either project made. Its `--token` only
-covers the HTTP API. Putting a login on rookery alone would look like
-protection it cannot provide, so there isn't one.
+WebLinked's OSC listener accepts commands from anyone who can reach UDP 7655.
+That's the protocol, not a choice either project made. Its `--token` only
+covers the HTTP API. A login on rookery alone would look like protection it
+can't actually give, so there isn't one.
 
-Treat rookery, its northbound OSC port, and every instance it manages as one
+Treat rookery, its northbound OSC port and every instance it manages as one
 trust domain, and put that domain on a show network that untrusted machines
-cannot reach. Do not expose any of it to the internet.
+can't reach. Don't expose any of it to the internet.
 
 Instance tokens *are* encrypted at rest (AES-256-GCM, key in
-`credentials.key` beside the registry), so `registry.json` in a backup or a
-synced folder does not hand over your fleet.
+`credentials.key` next to the registry), so `registry.json` in a backup or a
+synced folder doesn't hand over your fleet.
 
-An optional shared login for rookery's own UI — flock has one — is the
-obvious next addition; it is not here yet.
+An optional shared login for rookery's own UI (flock has one) is the obvious
+next thing to add; it isn't here yet.
 
 ## Status
 
@@ -291,20 +291,19 @@ obvious next addition; it is not here yet.
 three real WebLinked 0.7.1 processes on macOS. Confirmed working end to end:
 state polling, `url` (including the 3-mod-4 length that WebLinked's own
 decoder used to drop silently), `mute`, `format`, `output`, `script` (proven
-to *execute*, not merely arrive), group fan-out reaching exactly its members,
-and the full northbound chain driven by an independent OSC encoder written
-from the spec rather than from rookery's own.
+to *run*, not just arrive), group fan-out reaching its members and nobody
+else, and the full northbound chain driven by an independent OSC encoder
+written from the spec rather than from rookery's own.
 
-**Not verified:** anything off this machine — everything above was loopback,
+**Not verified:** anything off this machine. Everything above was loopback,
 so no real show network, switch or VLAN has been involved. Also unverified:
 discovery against a real LAN, Windows and Linux (built in CI and shipped in
-every release since v0.1.0, but never run — CI runs `cargo test` on Linux, not
+every release since v0.1.0, but never run; CI runs `cargo test` on Linux, not
 the binary), scale beyond three instances, a token-protected real instance,
 and multi-source addressing against real WebLinked rather than the simulator.
 
-[docs/verification.md](docs/verification.md) is the authority and says
-precisely which is which. It is deliberately more pessimistic than this
-summary.
+[docs/verification.md](docs/verification.md) is the authority and spells out
+which is which. It's more pessimistic than this summary, on purpose.
 
 ## Documentation
 
@@ -317,5 +316,5 @@ summary.
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE). Attributions in
+MIT, see [LICENSE](LICENSE). Attributions are in
 [ATTRIBUTIONS.md](ATTRIBUTIONS.md).
