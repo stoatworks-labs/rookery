@@ -12,6 +12,8 @@ got, all at once. Tag them into groups, see every instance's state on one
 screen, and change what's on air across a whole group with one action, or with
 one OSC cue from a lighting desk.
 
+The [project page](https://stoatworks-labs.com/software/rookery/) has the downloads, the [user guide](https://stoatworks-labs.com/software/rookery/guide/) and the video.
+
 It's a sibling to [flock](https://github.com/stoatworks-labs/flock), which does
 the same job for BirdDog Play decoders.
 
